@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mogul-logistics"
+version = "0.1.0"
+description = "OpenEnv environment for logistics shipment exception resolution"
+requires-python = ">=3.10"
+dependencies = [
+    "openenv-core>=0.2.3",
+    "pydantic>=2.0",
+    "fastapi>=0.100",
+    "uvicorn>=0.20",
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[project.optional-dependencies]
+inference = ["openai>=1.0"]
+
+[tool.setuptools.packages.find]
+include = ["server*", "models*", "client*"]
