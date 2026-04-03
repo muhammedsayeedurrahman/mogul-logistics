@@ -101,6 +101,34 @@ CUSTOM_CSS = """
   background: #162332 !important; border: 1px solid #1e3a5f !important;
   padding: 12px !important; margin-bottom: 8px !important; border-radius: 6px !important;
 }
+
+/* Cinematic feed */
+@keyframes cinematic-pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes cinematic-slide { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.cinematic-entry { animation: cinematic-slide 0.4s ease-out; }
+.cinematic-live { animation: cinematic-pulse 1.5s infinite; }
+.cinematic-feed { max-height: 420px; overflow-y: auto; scroll-behavior: smooth; }
+
+/* Manual control panel */
+.manual-panel {
+  background: linear-gradient(135deg, #162332, #1a3a5c) !important;
+  border: 2px solid #1e3a5f !important;
+  padding: 20px !important; border-radius: 10px !important;
+  margin-top: 16px !important;
+}
+.manual-panel:hover { border-color: #40c4ff !important; }
+.manual-execute-btn {
+  background: linear-gradient(135deg, #00c853, #00e676) !important;
+  border: none !important; color: #0f1923 !important;
+  font-weight: 700 !important; font-size: 1rem !important;
+  padding: 10px 24px !important;
+}
+.manual-reset-btn {
+  background: linear-gradient(135deg, #1a3a5c, #0d2137) !important;
+  border: 1px solid #40c4ff !important; color: #40c4ff !important;
+  font-weight: 600 !important; font-size: 1rem !important;
+  padding: 10px 24px !important;
+}
 """
 
 # ── Task descriptions ───────────────────────────────────────────────────
@@ -120,6 +148,17 @@ _RESOLUTION_ACTIONS = {
     "reroute", "reschedule", "file_claim", "approve_refund", "split_shipment",
 }
 _PRIORITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+
+_ACTION_ICONS = {
+    "investigate": "🔍", "contact_carrier": "📞", "escalate": "⬆️",
+    "reroute": "🔄", "reschedule": "📅", "file_claim": "📋",
+    "approve_refund": "💰", "split_shipment": "✂️", "reset": "🚀",
+}
+_ACTION_COLORS = {
+    "investigate": "#40c4ff", "contact_carrier": "#7a8ea0", "escalate": "#ff9100",
+    "reroute": "#b388ff", "reschedule": "#ffd740", "file_claim": "#ff5252",
+    "approve_refund": "#00e676", "split_shipment": "#ff6d00", "reset": "#40c4ff",
+}
 
 _SHIP_RE = re.compile(
     r"(SHP-\d+):\s+\S+\s+\|\s+status=(\w+)\s+\|\s+priority=(\w+)"
@@ -422,6 +461,92 @@ RUBRIC_HTML = """
 </div>
 """
 
+def _render_cinematic_feed(events: list[dict], is_live: bool = False) -> str:
+    """Render a cinematic timeline of agent actions."""
+    if not events:
+        return ""
+
+    live_badge = (
+        '<span class="cinematic-live" style="background:#ff5252;color:white;'
+        'padding:2px 10px;border-radius:4px;font-size:0.65rem;font-weight:700;'
+        'margin-left:10px">● LIVE</span>'
+        if is_live else
+        '<span style="background:#00e676;color:#0f1923;padding:2px 10px;'
+        'border-radius:4px;font-size:0.65rem;font-weight:700;'
+        'margin-left:10px">✓ COMPLETE</span>'
+    )
+
+    entries_html = ""
+    for i, ev in enumerate(events):
+        is_latest = (i == len(events) - 1)
+        icon = _ACTION_ICONS.get(ev["action"], "⚡")
+        color = _ACTION_COLORS.get(ev["action"], "#40c4ff")
+        cost = int(ACTION_COSTS.get(ev["action"], 0))
+
+        glow = f"box-shadow:0 0 15px {color}30;" if is_latest else ""
+        border_c = color if is_latest else "#1e3a5f"
+        bg = "#0d1520" if not is_latest else "#111d2b"
+
+        cost_html = (
+            f'<span style="color:#ffd740;font-weight:600;font-size:0.82rem">'
+            f'${cost:,}</span>'
+            if ev["action"] != "reset" else ""
+        )
+        step_label = (
+            f'<span style="color:{color};font-weight:700;font-size:0.88rem">'
+            f'STEP {ev["step"]}</span>'
+            if ev["step"] > 0 else
+            f'<span style="color:{color};font-weight:700;font-size:0.88rem">'
+            f'START</span>'
+        )
+
+        entry = (
+            f'<div class="cinematic-entry" style="background:{bg};'
+            f'border:1px solid {border_c};border-left:3px solid {color};'
+            f'border-radius:6px;padding:12px 16px;margin-bottom:8px;{glow}'
+            f'transition:all 0.3s ease">'
+            f'<div style="display:flex;justify-content:space-between;align-items:center">'
+            f'<div style="display:flex;align-items:center;gap:10px">'
+            f'<span style="font-size:1.3rem">{icon}</span>'
+            f'{step_label}'
+            f'<span style="color:#e0e6ed;font-weight:600;font-size:0.88rem">'
+            f'{ev["action"].replace("_"," ").upper()}</span>'
+            f'<span style="color:#7a8ea0;font-size:0.78rem">→ {ev["target"]}</span>'
+            f'</div>'
+            f'{cost_html}</div>'
+            f'<div style="color:#c8d6e0;font-size:0.82rem;margin-top:8px;'
+            f'padding-left:36px;line-height:1.5">'
+            f'💭 {ev["explanation"]}</div>'
+        )
+
+        if ev.get("done") and ev.get("reward") is not None:
+            r = ev["reward"]
+            sc = _GREEN if r >= 0.7 else (_YELLOW if r >= 0.5 else _RED)
+            entry += (
+                f'<div style="margin-top:10px;padding:10px 16px;'
+                f'background:linear-gradient(135deg,#162332,#1a3a5c);'
+                f'border-radius:6px;text-align:center;border:1px solid {sc}">'
+                f'<span style="font-size:0.72rem;color:#7a8ea0;'
+                f'text-transform:uppercase;letter-spacing:0.1em">'
+                f'EPISODE COMPLETE — FINAL SCORE </span>'
+                f'<span style="color:{sc};font-weight:800;font-size:1.4rem;'
+                f'text-shadow:0 0 12px {sc}40">{r:.4f}</span></div>'
+            )
+
+        entry += '</div>'
+        entries_html += entry
+
+    return (
+        f'<div style="background:linear-gradient(135deg,#0d2137,#162332);'
+        f'border:1px solid #1e3a5f;border-radius:10px;padding:16px;margin:12px 0">'
+        f'<div style="display:flex;align-items:center;margin-bottom:14px">'
+        f'<span style="font-size:0.82rem;color:#7a8ea0;text-transform:uppercase;'
+        f'letter-spacing:0.12em;font-weight:600">🎬 Agent Activity Feed</span>'
+        f'{live_badge}</div>'
+        f'<div class="cinematic-feed">{entries_html}</div></div>'
+    )
+
+
 HOW_IT_WORKS_HTML = """
 <div style="background:linear-gradient(135deg,#0d2137,#1a3a5c);border:1px solid #1e3a5f;
 padding:20px;border-radius:8px;margin-bottom:16px">
@@ -539,6 +664,34 @@ def build_custom_dashboard(
         action_log_entries.append(entry)
 
         scorecard = _render_scorecard(data) if done else ""
+
+        # Show manual action as a cinematic entry
+        icon = _ACTION_ICONS.get(action_type, "⚡")
+        color = _ACTION_COLORS.get(action_type, "#40c4ff")
+        manual_narration = (
+            f'<div style="background:linear-gradient(135deg,#0d2137,#162332);'
+            f'border:1px solid #1e3a5f;border-radius:10px;padding:16px;margin:12px 0">'
+            f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+            f'<span style="font-size:0.82rem;color:#7a8ea0;text-transform:uppercase;'
+            f'letter-spacing:0.12em;font-weight:600">🎮 Manual Action</span></div>'
+            f'<div class="cinematic-entry" style="background:#0d1520;'
+            f'border:1px solid {color};border-left:3px solid {color};'
+            f'border-radius:6px;padding:12px 16px;box-shadow:0 0 15px {color}30">'
+            f'<div style="display:flex;justify-content:space-between;align-items:center">'
+            f'<div style="display:flex;align-items:center;gap:10px">'
+            f'<span style="font-size:1.3rem">{icon}</span>'
+            f'<span style="color:{color};font-weight:700;font-size:0.88rem">'
+            f'STEP {step_counter[0]}</span>'
+            f'<span style="color:#e0e6ed;font-weight:600">'
+            f'{action_type.replace("_"," ").upper()}</span>'
+            f'<span style="color:#7a8ea0;font-size:0.78rem">→ {target_id}</span>'
+            f'</div>'
+            f'<span style="color:#ffd740;font-weight:600">${cost:,}</span></div>'
+            f'<div style="color:#c8d6e0;font-size:0.82rem;margin-top:8px;'
+            f'padding-left:36px">💭 Manual action executed by user</div>'
+            f'</div></div>'
+        )
+
         return (
             _render_shipments(obs),
             *_render_stats(obs),
@@ -546,19 +699,26 @@ def build_custom_dashboard(
             "\n".join(action_log_entries),
             json.dumps(data, indent=2),
             scorecard,
-            "",  # narration
+            manual_narration,
         )
 
     async def do_auto_run(task_label, speed):
-        """Step-by-step auto-run with narration."""
+        """Step-by-step auto-run with cinematic narration."""
         action_log_entries.clear()
         reward_history.clear()
         step_counter[0] = 0
         tid = _task_id(task_label)
+        cinematic_events: list[dict] = []
 
         data = await web_manager.reset_environment(reset_kwargs={"task_id": tid})
         obs = data.get("observation", {})
-        narration = f"🟢 Episode started — {task_label}"
+
+        cinematic_events.append({
+            "step": 0, "action": "reset", "target": tid,
+            "explanation": f"Episode initialized — {task_label}. "
+                           f"Agent scanning shipments and planning optimal resolution order...",
+            "reward": None, "done": False,
+        })
         yield (
             _render_shipments(obs),
             *_render_stats(obs),
@@ -566,7 +726,7 @@ def build_custom_dashboard(
             "",
             json.dumps(data, indent=2),
             "",
-            _wrap(narration),
+            _render_cinematic_feed(cinematic_events, is_live=True),
         )
 
         done = data.get("done", False)
@@ -598,9 +758,14 @@ def build_custom_dashboard(
             action_log_entries.append(entry)
             scorecard = _render_scorecard(data) if done else ""
 
-            narration = f"Step {step_counter[0]}: {explanation}"
-            if done:
-                narration += f"\n\n🏁 Episode complete — Final score: {reward:.4f}"
+            cinematic_events.append({
+                "step": step_counter[0],
+                "action": action["action_type"],
+                "target": action["target_shipment_id"],
+                "explanation": explanation,
+                "reward": reward if done else None,
+                "done": done,
+            })
 
             yield (
                 _render_shipments(obs),
@@ -609,7 +774,7 @@ def build_custom_dashboard(
                 "\n".join(action_log_entries),
                 json.dumps(data, indent=2),
                 scorecard,
-                _wrap(narration),
+                _render_cinematic_feed(cinematic_events, is_live=not done),
             )
 
     async def do_run_all(speed):
@@ -737,37 +902,11 @@ def build_custom_dashboard(
             with gr.Accordion("📋 Grading Rubric", open=False):
                 gr.HTML(RUBRIC_HTML)
 
-            with gr.Accordion("🔧 Manual Actions", open=False):
-                action_type = gr.Dropdown(
-                    choices=sorted(ACTION_COSTS.keys()),
-                    label="Action Type", value="investigate",
-                )
-                target_id = gr.Dropdown(
-                    choices=[f"SHP-{i:03d}" for i in range(1, 9)],
-                    label="Target Shipment", value="SHP-001",
-                )
-                params_input = gr.Textbox(
-                    label="Parameters (JSON)", value="{}",
-                    placeholder='{"reason": "urgent"}',
-                )
-                cost_hint = gr.HTML(
-                    f'<div style="font-size:0.78rem;color:#7a8ea0">'
-                    f'Cost: <span style="color:#ffd740">'
-                    f'${int(ACTION_COSTS.get("investigate", 0)):,}</span></div>'
-                )
-
-                def _update_cost(at):
-                    c = int(ACTION_COSTS.get(at, 0))
-                    return (
-                        f'<div style="font-size:0.78rem;color:#7a8ea0">'
-                        f'Cost: <span style="color:#ffd740">${c:,}</span></div>'
-                    )
-
-                action_type.change(fn=_update_cost, inputs=[action_type], outputs=[cost_hint])
-
-                with gr.Row():
-                    step_btn = gr.Button("Execute", variant="primary", elem_classes="btn-step")
-                    reset_btn = gr.Button("Reset", variant="secondary", elem_classes="btn-reset")
+            gr.HTML(
+                '<div style="font-size:0.78rem;color:#7a8ea0;margin-top:8px">'
+                '💡 Use <b>Manual Control</b> panel below the shipments '
+                'to test individual actions.</div>'
+            )
 
         # ── Main content ──
         with gr.Column(elem_classes="mogul-root"):
@@ -797,8 +936,19 @@ def build_custom_dashboard(
                     elem_classes="stat-card stat-red",
                 )
 
-            # Agent narration
-            narration_display = gr.HTML(value="")
+            # Agent cinematic narration feed
+            narration_display = gr.HTML(
+                value=(
+                    '<div style="background:linear-gradient(135deg,#0d2137,#162332);'
+                    'border:1px solid #1e3a5f;border-radius:10px;padding:20px;'
+                    'margin:12px 0;text-align:center">'
+                    '<span style="font-size:1.3rem">🎬</span><br>'
+                    '<span style="color:#7a8ea0;font-size:0.85rem">'
+                    'Click <b style="color:#ff9100">▶ Run Agent Demo</b> '
+                    'in the sidebar to watch the agent solve shipments step-by-step'
+                    '</span></div>'
+                ),
+            )
 
             # Shipments
             with gr.Row():
@@ -840,6 +990,76 @@ def build_custom_dashboard(
                         value="", interactive=False, lines=6,
                         elem_classes="action-log",
                     )
+
+            # ── Manual Control Panel ──
+            gr.HTML(
+                '<div style="color:#40c4ff;font-size:0.88rem;font-weight:700;'
+                'margin-top:20px;margin-bottom:8px;display:flex;align-items:center;'
+                'gap:8px">'
+                '<span style="font-size:1.1rem">🎮</span>'
+                'MANUAL CONTROL — Test Individual Actions'
+                '</div>'
+            )
+            with gr.Group(elem_classes="manual-panel"):
+                with gr.Row():
+                    action_type = gr.Dropdown(
+                        choices=sorted(ACTION_COSTS.keys()),
+                        label="Action Type", value="investigate",
+                        scale=2,
+                    )
+                    target_id = gr.Dropdown(
+                        choices=[f"SHP-{i:03d}" for i in range(1, 9)],
+                        label="Target Shipment", value="SHP-001",
+                        scale=2,
+                    )
+                    params_input = gr.Textbox(
+                        label="Parameters (JSON)", value="{}",
+                        placeholder='{"reason": "urgent"}',
+                        scale=2,
+                    )
+                    cost_hint = gr.HTML(
+                        f'<div style="text-align:center;padding-top:24px">'
+                        f'<div style="font-size:0.72rem;color:#7a8ea0;'
+                        f'text-transform:uppercase;letter-spacing:0.05em">'
+                        f'Action Cost</div>'
+                        f'<div style="font-size:1.6rem;font-weight:700;'
+                        f'color:#ffd740">'
+                        f'${int(ACTION_COSTS.get("investigate", 0)):,}</div></div>',
+                    )
+
+                def _update_cost(at):
+                    c = int(ACTION_COSTS.get(at, 0))
+                    return (
+                        f'<div style="text-align:center;padding-top:24px">'
+                        f'<div style="font-size:0.72rem;color:#7a8ea0;'
+                        f'text-transform:uppercase;letter-spacing:0.05em">'
+                        f'Action Cost</div>'
+                        f'<div style="font-size:1.6rem;font-weight:700;'
+                        f'color:#ffd740">${c:,}</div></div>'
+                    )
+
+                action_type.change(fn=_update_cost, inputs=[action_type], outputs=[cost_hint])
+
+                with gr.Row():
+                    step_btn = gr.Button(
+                        "⚡ Execute Step", variant="primary",
+                        elem_classes="manual-execute-btn", scale=2,
+                    )
+                    reset_btn = gr.Button(
+                        "🔄 Reset Episode", variant="secondary",
+                        elem_classes="manual-reset-btn", scale=1,
+                    )
+
+                gr.HTML(
+                    '<div style="font-size:0.75rem;color:#7a8ea0;margin-top:8px;'
+                    'line-height:1.5">'
+                    '<b style="color:#e0e6ed">How to verify:</b> '
+                    'Select a difficulty above → click <b>🔄 Reset</b> → '
+                    'choose an action type & target → click <b>⚡ Execute</b>. '
+                    'Watch the shipment cards update in real-time. '
+                    'Resolution actions: <code style="color:#00e676">reroute, reschedule, '
+                    'file_claim, approve_refund, split_shipment</code>.</div>'
+                )
 
             # Scorecard
             scorecard_display = gr.HTML(value="")
