@@ -837,26 +837,75 @@ def build_custom_dashboard(
 
     # ── Build the dashboard ─────────────────────────────────────────
 
-    # Tab-hiding CSS — injected via gr.HTML, applies globally to hide
-    # the Playground/Custom tab bar and force Custom content visible.
+    # Tab-hiding CSS — aggressive selectors for Gradio 5/6 compatibility.
+    # Hides the Playground/Custom tab bar entirely and forces Custom visible.
     _TAB_OVERRIDE_CSS = """
-    .tabs > .tab-nav { display: none !important; }
-    .tabitem { display: none !important; }
-    .tabitem:last-of-type { display: block !important; }
+    /* Hide tab navigation bar — all possible Gradio selectors */
+    .tab-nav,
+    .tabs > .tab-nav,
+    div.tab-nav,
+    [role="tablist"],
+    nav.tab-nav,
+    .gradio-container .tab-nav { display: none !important; height: 0 !important; overflow: hidden !important; }
+
+    /* Hide all tab panels, force the last one (Custom) visible */
+    .tabitem,
+    div.tabitem,
+    [role="tabpanel"] { display: none !important; }
+    .tabitem:last-of-type,
+    div.tabitem:last-of-type,
+    [role="tabpanel"]:last-of-type { display: block !important; }
+
+    /* Also hide the TabbedInterface title bar */
+    .gradio-container h1:first-of-type { display: none !important; }
     """
 
-    # JS to auto-switch to Custom tab and enable dark mode
+    # JS to auto-switch to Custom tab, enable dark mode, and set up auto-scroll
     _AUTO_SWITCH_JS = """
     () => {
       document.body.classList.add('dark');
       var gc = document.querySelector('.gradio-container');
       if (gc) gc.classList.add('dark');
+
+      /* Click the Custom tab (try multiple selector patterns) */
       setTimeout(function() {
-        var tabs = document.querySelectorAll('button[role="tab"]');
-        tabs.forEach(function(t) {
+        /* Try button[role=tab] */
+        document.querySelectorAll('button[role="tab"]').forEach(function(t) {
           if (t.textContent.trim() === 'Custom') t.click();
         });
-      }, 600);
+        /* Try a[role=tab] or plain links */
+        document.querySelectorAll('[role="tab"]').forEach(function(t) {
+          if (t.textContent.trim() === 'Custom') t.click();
+        });
+        /* Try any clickable with "Custom" text in tab nav */
+        document.querySelectorAll('.tab-nav button, .tab-nav a').forEach(function(t) {
+          if (t.textContent.trim() === 'Custom') t.click();
+        });
+      }, 500);
+
+      /* Force-hide tab bar via JS (backup for CSS) */
+      setTimeout(function() {
+        document.querySelectorAll('.tab-nav, [role="tablist"]').forEach(function(el) {
+          el.style.display = 'none';
+        });
+      }, 800);
+
+      /* Auto-scroll: watch for cinematic feed updates and scroll into view */
+      var scrollObserver = new MutationObserver(function(mutations) {
+        var feed = document.querySelector('.cinematic-feed');
+        if (feed && feed.children.length > 0) {
+          /* Scroll the feed div itself to bottom */
+          feed.scrollTop = feed.scrollHeight;
+          /* Scroll the feed into the viewport */
+          feed.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+      setTimeout(function() {
+        var container = document.querySelector('.gradio-container');
+        if (container) {
+          scrollObserver.observe(container, { childList: true, subtree: true });
+        }
+      }, 1500);
     }
     """
 
