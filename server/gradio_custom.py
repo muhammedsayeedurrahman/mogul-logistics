@@ -231,12 +231,28 @@ def _demo_heuristic(obs: dict) -> tuple[dict, str]:
 
     needed = 1.0 - prog
     if investigated:
+        # Can a single action finish it?
         for atype in ["reschedule", "file_claim", "approve_refund"]:
             if _ACTION_PROGRESS[atype] >= needed and int(ACTION_COSTS.get(atype, 9999)) <= budget:
                 return (
                     {"action_type": atype, "target_shipment_id": sid, "parameters": {}},
                     f"{reason} -> {atype} will finish it ({_ACTION_PROGRESS[atype]:.0%} >= {needed:.0%} needed)",
                 )
+
+        # Cheap 4-step path: escalate → file_claim → reschedule (saves $1,000)
+        sla = target.get("sla", 0)
+        if sla >= 3 and prog < 0.20 and budget >= (200 + 300 + 800):
+            return (
+                {"action_type": "escalate", "target_shipment_id": sid, "parameters": {}},
+                f"{reason} -> escalate adds 20% (cheap path: $1,300 remaining vs $2,300 fast path)",
+            )
+        if sla >= 2 and 0.20 <= prog < 0.40 and budget >= (300 + 800):
+            return (
+                {"action_type": "file_claim", "target_shipment_id": sid, "parameters": {}},
+                f"{reason} -> file_claim adds 30% (cheap path continues)",
+            )
+
+        # Fast path fallback: approve_refund → reschedule
         if prog < 0.50 and budget >= 1500:
             return (
                 {"action_type": "approve_refund", "target_shipment_id": sid, "parameters": {}},

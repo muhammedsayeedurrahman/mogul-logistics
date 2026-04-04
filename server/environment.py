@@ -111,8 +111,9 @@ class ShipmentEnvironment(
         if action.action_type not in VALID_ACTIONS:
             return self._build_observation(
                 feedback=(
-                    f"Invalid action_type '{action.action_type}'. "
-                    f"Valid: {sorted(VALID_ACTIONS)}"
+                    f"[ERROR:INVALID_ACTION] '{action.action_type}' is not a valid "
+                    f"action. Valid actions: {sorted(VALID_ACTIONS)}. "
+                    f"Suggestion: start with 'investigate' to reveal exception details."
                 ),
                 done=False,
                 reward=0.0,
@@ -124,8 +125,9 @@ class ShipmentEnvironment(
             valid_ids = sorted(self._shipments.keys())
             return self._build_observation(
                 feedback=(
-                    f"Unknown shipment '{action.target_shipment_id}'. "
-                    f"Valid IDs: {valid_ids}"
+                    f"[ERROR:INVALID_TARGET] Shipment '{action.target_shipment_id}' "
+                    f"does not exist. Active shipments: {valid_ids}. "
+                    f"Suggestion: check shipment_status field for available IDs."
                 ),
                 done=False,
                 reward=0.0,
@@ -134,10 +136,20 @@ class ShipmentEnvironment(
         # Check budget
         cost = action_cost(action.action_type)
         if cost > self._state.budget:
+            # Suggest cheaper alternatives
+            affordable = sorted(
+                [(a, c) for a, c in ACTION_COSTS.items() if c <= self._state.budget],
+                key=lambda x: x[1],
+            )
+            suggestion = (
+                f"Affordable actions: {', '.join(f'{a} (${int(c)})' for a, c in affordable)}"
+                if affordable else "No actions are affordable."
+            )
             return self._build_observation(
                 feedback=(
-                    f"Insufficient budget for '{action.action_type}' "
-                    f"(cost ${cost:,.0f}, remaining ${self._state.budget:,.0f})."
+                    f"[ERROR:BUDGET_EXCEEDED] '{action.action_type}' costs "
+                    f"${cost:,.0f} but only ${self._state.budget:,.0f} remains. "
+                    f"{suggestion}"
                 ),
                 done=False,
                 reward=0.0,
@@ -145,8 +157,19 @@ class ShipmentEnvironment(
 
         # Check if already resolved
         if shipment.status == "resolved":
+            active = [
+                s.shipment_id for s in self._shipments.values()
+                if s.status not in ("resolved", "failed")
+            ]
+            suggestion = (
+                f"Active shipments needing attention: {active}"
+                if active else "All shipments are resolved or failed."
+            )
             return self._build_observation(
-                feedback=f"Shipment {shipment.shipment_id} is already resolved.",
+                feedback=(
+                    f"[ERROR:ALREADY_RESOLVED] {shipment.shipment_id} is already "
+                    f"resolved. {suggestion}"
+                ),
                 done=False,
                 reward=0.0,
             )
@@ -275,8 +298,11 @@ class ShipmentEnvironment(
         # Precondition: must investigate before costly resolution actions
         if not shipment.investigated and atype in RESOLUTION_ACTIONS:
             return (
-                f"[{sid}] Cannot '{atype}' without investigating first. "
-                "Please investigate the shipment before taking resolution actions."
+                f"[{sid}] [ERROR:NOT_INVESTIGATED] Cannot '{atype}' without "
+                f"investigating first. Use 'investigate' on {sid} before "
+                f"resolution actions ({', '.join(sorted(RESOLUTION_ACTIONS))}). "
+                f"Non-resolution actions (investigate, contact_carrier, escalate) "
+                f"can be used without investigation."
             )
 
         # Resolution actions

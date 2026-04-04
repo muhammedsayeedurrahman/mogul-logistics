@@ -84,6 +84,9 @@ RESOLUTION_ACTIONS = {
 # Fast-path: investigate($50) + approve_refund($1500) + reschedule($800)
 FAST_PATH_COST = 2350
 FAST_PATH_STEPS = 3
+# Cheap-path: investigate($50) + escalate($200) + file_claim($300) + reschedule($800)
+CHEAP_PATH_COST = 1350
+CHEAP_PATH_STEPS = 4
 
 
 # ---------------------------------------------------------------------------
@@ -117,14 +120,25 @@ def _min_steps_to_resolve(progress: float, investigated: bool) -> int:
     return 3
 
 
-def _fast_path_remaining_cost(progress: float, investigated: bool) -> int:
-    cost = 0
+def _cheap_path_remaining_cost(
+    progress: float, investigated: bool, sla: int,
+) -> int:
+    """Return cheapest remaining cost considering both 3-step and 4-step paths."""
     if not investigated:
-        cost += ACTION_COSTS["investigate"]
-    if progress < 0.50:
-        cost += ACTION_COSTS["approve_refund"]
-    cost += ACTION_COSTS["reschedule"]
-    return cost
+        # 3-step fast: investigate + approve_refund + reschedule = $2,350
+        fast = ACTION_COSTS["investigate"] + ACTION_COSTS["approve_refund"] + ACTION_COSTS["reschedule"]
+        # 4-step cheap: investigate + escalate + file_claim + reschedule = $1,350
+        cheap = ACTION_COSTS["investigate"] + 200 + 300 + ACTION_COSTS["reschedule"]
+        # Use cheap path only if SLA allows (need 4 steps, so sla must be ≥ 4)
+        return int(cheap if sla >= 4 else fast)
+    # Already investigated
+    if progress >= 0.50:
+        return int(ACTION_COSTS["reschedule"])
+    # 2-step fast: approve_refund + reschedule = $2,300
+    fast = ACTION_COSTS["approve_refund"] + ACTION_COSTS["reschedule"]
+    # 3-step cheap: escalate + file_claim + reschedule = $1,300
+    cheap = 200 + 300 + ACTION_COSTS["reschedule"]
+    return int(cheap if sla >= 3 else fast)
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +159,7 @@ def _plan_resolution_order(ships: list[dict], total_steps: int, budget: int) -> 
             or s["status"] in ("investigating", "action_taken")
         )
         steps_needed = _min_steps_to_resolve(s["progress"], investigated)
-        cost_needed = _fast_path_remaining_cost(s["progress"], investigated)
+        cost_needed = _cheap_path_remaining_cost(s["progress"], investigated, s["sla"])
         candidates.append({
             **s,
             "investigated": investigated,
@@ -306,7 +320,16 @@ class HeuristicPlanner:
                 finishing.sort(key=lambda x: x[1])
                 return _make_action(finishing[0][0], sid)
 
-        # Fast path: approve_refund then reschedule
+        # Cheap 4-step path: escalate($200) → file_claim($300) → reschedule($800)
+        # Use when SLA allows (≥3 steps remaining) — saves $1,000 vs fast path
+        if investigated and target["sla"] >= 3:
+            cheap_remaining = 200 + 300 + 800  # $1,300
+            if prog < 0.20 and budget >= cheap_remaining:
+                return _make_action("escalate", sid)
+            if 0.20 <= prog < 0.40 and budget >= (300 + 800):
+                return _make_action("file_claim", sid)
+
+        # Fast path: approve_refund then reschedule (when SLA is tight)
         if investigated:
             if prog < 0.50 and budget >= ACTION_COSTS["approve_refund"]:
                 return _make_action("approve_refund", sid)
