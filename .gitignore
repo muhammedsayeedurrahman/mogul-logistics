@@ -24,3 +24,8 @@ outputs/
 # Environment
 .env
 *.log
+
+# Claude Code internal (hackathon plan — not for repo)
+CLAUDE.md
+PLAN.md
+.claude/

@@ -29,6 +29,8 @@ from .gradio_styles import (
     render_stats,
 )
 from .heuristic import HeuristicPlanner
+from .route_map import render_route_map
+from .training_viz import render_training_results
 
 
 def build_custom_dashboard(
@@ -75,6 +77,7 @@ def build_custom_dashboard(
             json.dumps(data, indent=2),
             "",
             "",
+            render_route_map(obs),
         )
 
     async def do_step(action_type, target_id, params_str):
@@ -139,6 +142,7 @@ def build_custom_dashboard(
             json.dumps(data, indent=2),
             scorecard,
             manual_narration,
+            render_route_map(obs),
         )
 
     async def do_auto_run(task_label, speed):
@@ -172,6 +176,7 @@ def build_custom_dashboard(
             json.dumps(data, indent=2),
             "",
             render_cinematic_feed(cinematic_events, is_live=True),
+            render_route_map(obs),
         )
 
         done = data.get("done", False)
@@ -220,6 +225,7 @@ def build_custom_dashboard(
                 json.dumps(data, indent=2),
                 scorecard,
                 render_cinematic_feed(cinematic_events, is_live=not done),
+                render_route_map(obs),
             )
 
     async def do_run_all(speed):
@@ -374,6 +380,15 @@ def build_custom_dashboard(
                 ),
             )
 
+            with gr.Accordion("\U0001f5fa Route Map \u2014 Indian Logistics Network", open=True):
+                route_map_display = gr.HTML(
+                    value=(
+                        '<div style="text-align:center;padding:30px;color:#7a8ea0;'
+                        'font-size:0.85rem">'
+                        'Start an episode to see the route map.</div>'
+                    ),
+                )
+
             with gr.Row():
                 with gr.Column(scale=3):
                     gr.HTML(
@@ -499,6 +514,9 @@ def build_custom_dashboard(
             scorecard_display = gr.HTML(value="")
             comparison_display = gr.HTML(value="")
 
+            with gr.Accordion("\U0001f4ca Training Results \u2014 Agent Performance", open=True):
+                gr.HTML(render_training_results())
+
             with gr.Accordion("\U0001f4c4 Raw JSON Response", open=False):
                 raw_json = gr.Code(
                     value="", language="json", interactive=False,
@@ -514,6 +532,7 @@ def build_custom_dashboard(
             raw_json,
             scorecard_display,
             narration_display,
+            route_map_display,
         ]
 
         async def reset_wrap(task_label):

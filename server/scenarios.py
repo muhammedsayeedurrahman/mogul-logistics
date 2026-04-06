@@ -59,13 +59,13 @@ class Scenario:
 
 
 _CITIES = [
-    "Shanghai", "Rotterdam", "Los Angeles", "Singapore", "Dubai",
-    "Mumbai", "Hamburg", "Tokyo", "New York", "Busan",
+    "Mumbai", "Delhi NCR", "Chennai", "Bangalore", "Kolkata",
+    "Hyderabad", "Pune", "Ahmedabad", "Jaipur", "Lucknow",
 ]
 
 _CARRIERS = [
-    "Maersk", "MSC", "CMA CGM", "COSCO", "Hapag-Lloyd",
-    "Evergreen", "ONE", "Yang Ming", "HMM", "ZIM",
+    "Blue Dart", "DTDC", "Delhivery", "Gati", "Ecom Express",
+    "Rivigo", "SafeXpress", "TCI Express", "Allcargo", "Mahindra Logistics",
 ]
 
 
@@ -90,9 +90,10 @@ def generate_easy_scenario(seed: int | None = None) -> Scenario:
         sla_deadline_steps=4,
         description=(
             f"Shipment SHP-001 from {origin} to {dest} via {carrier} is delayed "
-            f"due to severe weather. Cargo value: ${value:,.2f}. "
-            "The vessel is currently held at port awaiting clearance. "
-            "Expected delay: 2-4 days. Customer has been notified but is requesting updates."
+            f"due to heavy monsoon rainfall on the national highway. "
+            f"Cargo value: ${value:,.2f}. "
+            "The truck is stranded at a waterlogged checkpoint. "
+            "Expected delay: 2-4 days. Customer is requesting urgent updates."
         ),
         carrier=carrier,
         value=value,
@@ -103,8 +104,8 @@ def generate_easy_scenario(seed: int | None = None) -> Scenario:
         total_budget=5_000.0,
         max_steps=5,
         description=(
-            "A single shipment has been delayed due to weather conditions. "
-            "Investigate the cause and determine the best resolution."
+            "A single shipment has been delayed due to monsoon flooding "
+            "on the national highway. Investigate and resolve."
         ),
     )
 
@@ -113,10 +114,10 @@ def generate_medium_scenario(seed: int | None = None) -> Scenario:
     """Multiple exceptions requiring triage and prioritization."""
     rng = random.Random(seed)
     exception_configs: list[tuple[ExceptionType, Priority, int, str]] = [
-        ("customs_hold", "critical", 3, "held at customs due to incomplete documentation"),
-        ("damage_reported", "high", 5, "container damage reported during transit"),
-        ("weather_delay", "medium", 6, "delayed due to tropical storm warning"),
-        ("misroute", "high", 4, "incorrectly routed to wrong distribution center"),
+        ("customs_hold", "critical", 3, "held at interstate customs checkpoint due to e-way bill mismatch"),
+        ("damage_reported", "high", 5, "cargo damage reported during last-mile delivery in congested area"),
+        ("weather_delay", "medium", 6, "delayed due to cyclone warning along eastern coast"),
+        ("misroute", "high", 4, "incorrectly routed to wrong fulfilment centre during Diwali surge"),
     ]
 
     shipments = []
@@ -147,8 +148,9 @@ def generate_medium_scenario(seed: int | None = None) -> Scenario:
         total_budget=12_000.0,
         max_steps=10,
         description=(
-            "Multiple shipments have different exception types. "
-            "Prioritize by SLA urgency and resolve each appropriately within budget."
+            "Multiple shipments across Indian logistics corridors face different "
+            "exceptions during festive season surge. Prioritize by SLA urgency "
+            "and resolve each within budget."
         ),
     )
 
@@ -157,18 +159,18 @@ def generate_hard_scenario(seed: int | None = None) -> Scenario:
     """Cascading supply chain disruption with tight budget."""
     rng = random.Random(seed)
 
-    # Port closure affects multiple shipments
-    closed_port = rng.choice(["Shanghai", "Rotterdam", "Singapore"])
+    # Major hub disruption affects multiple shipments
+    closed_hub = rng.choice(["JNPT Mumbai", "Chennai Port", "Mundra Port"])
 
     exception_configs: list[tuple[ExceptionType, Priority, int, str]] = [
-        ("port_closure", "critical", 2, f"stuck at {closed_port} port closure"),
-        ("port_closure", "critical", 3, f"rerouting needed due to {closed_port} closure"),
-        ("capacity_overflow", "high", 4, "overflow from rerouted vessels"),
-        ("customs_hold", "high", 4, "expedited customs review triggered"),
-        ("damage_reported", "medium", 6, "container shifted during emergency reroute"),
-        ("carrier_breakdown", "medium", 5, "backup carrier vehicle breakdown"),
-        ("documentation_error", "low", 7, "paperwork mismatch from rush reroute"),
-        ("misroute", "low", 8, "sent to wrong hub during disruption"),
+        ("port_closure", "critical", 2, f"stuck at {closed_hub} — cyclone alert closure"),
+        ("port_closure", "critical", 3, f"rerouting needed due to {closed_hub} shutdown"),
+        ("capacity_overflow", "high", 4, "warehouse overflow from diverted cargo in festive rush"),
+        ("customs_hold", "high", 4, "GST compliance review triggered at state border"),
+        ("damage_reported", "medium", 6, "cargo shifted during emergency reroute on NH-48"),
+        ("carrier_breakdown", "medium", 5, "delivery truck breakdown on tier-2 city route"),
+        ("documentation_error", "low", 7, "e-way bill mismatch from rush reroute"),
+        ("misroute", "low", 8, "sent to wrong distribution hub during disruption"),
     ]
 
     shipments = []
@@ -199,9 +201,10 @@ def generate_hard_scenario(seed: int | None = None) -> Scenario:
         total_budget=15_000.0,
         max_steps=15,
         description=(
-            f"Major port closure at {closed_port} has caused cascading failures "
-            "across 8 shipments. Budget is limited — you must triage and minimize "
-            "total loss. Not all shipments can be fully resolved."
+            f"Major disruption at {closed_hub} due to cyclone alert has caused "
+            "cascading failures across 8 shipments on Indian logistics corridors. "
+            "Budget is limited — you must triage and minimize total loss. "
+            "Not all shipments can be fully resolved."
         ),
     )
 
