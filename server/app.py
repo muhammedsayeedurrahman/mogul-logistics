@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import traceback
 from pathlib import Path
 
 # Ensure project root is importable
@@ -16,7 +17,31 @@ from openenv.core.env_server import create_app
 from models import ShipmentAction, ShipmentObservation
 from server.constants import ACTION_COSTS, ACTION_PROGRESS, RESOLUTION_ACTIONS
 from server.environment import ShipmentEnvironment
-from server.gradio_custom import build_custom_dashboard
+
+# Store dashboard build error for diagnostics
+_dashboard_error: str | None = None
+
+try:
+    from server.gradio_custom import build_custom_dashboard
+    _gradio_builder = build_custom_dashboard
+except Exception as e:
+    _dashboard_error = traceback.format_exc()
+    _gradio_builder = None
+    print(f"[WARN] Custom dashboard import failed: {e}", file=sys.stderr)
+
+
+def _safe_dashboard_builder(*args, **kwargs):
+    """Wrapper that catches dashboard build errors for diagnostics."""
+    global _dashboard_error
+    if _gradio_builder is None:
+        raise RuntimeError(f"Dashboard import failed:\n{_dashboard_error}")
+    try:
+        return _gradio_builder(*args, **kwargs)
+    except Exception as e:
+        _dashboard_error = traceback.format_exc()
+        print(f"[WARN] Custom dashboard build failed: {e}", file=sys.stderr)
+        raise
+
 
 app = create_app(
     ShipmentEnvironment,
@@ -24,7 +49,7 @@ app = create_app(
     ShipmentObservation,
     env_name="mogul-logistics",
     max_concurrent_envs=1,
-    gradio_builder=build_custom_dashboard,
+    gradio_builder=_safe_dashboard_builder,
 )
 
 
@@ -32,6 +57,15 @@ app = create_app(
 async def root():
     """Redirect root to the web interface."""
     return RedirectResponse(url="/web")
+
+
+@app.get("/debug/dashboard", tags=["Debug"])
+async def debug_dashboard():
+    """Show dashboard build error if any."""
+    return {
+        "dashboard_error": _dashboard_error,
+        "builder_available": _gradio_builder is not None,
+    }
 
 
 # ---------------------------------------------------------------------------
