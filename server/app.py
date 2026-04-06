@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-import traceback
 from pathlib import Path
 
 # Ensure project root is importable
@@ -17,41 +16,7 @@ from openenv.core.env_server import create_app
 from models import ShipmentAction, ShipmentObservation
 from server.constants import ACTION_COSTS, ACTION_PROGRESS, RESOLUTION_ACTIONS
 from server.environment import ShipmentEnvironment
-
-# Store dashboard build error for diagnostics
-_dashboard_error: str | None = None
-
-try:
-    from server.gradio_custom import build_custom_dashboard
-    _gradio_builder = build_custom_dashboard
-except Exception as e:
-    _dashboard_error = traceback.format_exc()
-    _gradio_builder = None
-    print(f"[WARN] Custom dashboard import failed: {e}", file=sys.stderr)
-
-
-_builder_call_count = 0
-_builder_args_info: str | None = None
-
-
-def _safe_dashboard_builder(*args, **kwargs):
-    """Wrapper that catches dashboard build errors for diagnostics."""
-    global _dashboard_error, _builder_call_count, _builder_args_info
-    _builder_call_count += 1
-    _builder_args_info = f"args={len(args)}, kwargs={list(kwargs.keys())}"
-    print(f"[DEBUG] Dashboard builder called (#{_builder_call_count}): {_builder_args_info}", file=sys.stderr)
-    if _gradio_builder is None:
-        _dashboard_error = f"Dashboard import failed (original error above)"
-        raise RuntimeError(_dashboard_error)
-    try:
-        result = _gradio_builder(*args, **kwargs)
-        print(f"[DEBUG] Dashboard builder succeeded, type={type(result).__name__}", file=sys.stderr)
-        return result
-    except Exception as e:
-        _dashboard_error = traceback.format_exc()
-        print(f"[WARN] Custom dashboard build failed:\n{_dashboard_error}", file=sys.stderr)
-        raise
-
+from server.gradio_custom import build_custom_dashboard
 
 app = create_app(
     ShipmentEnvironment,
@@ -59,7 +24,7 @@ app = create_app(
     ShipmentObservation,
     env_name="mogul-logistics",
     max_concurrent_envs=1,
-    gradio_builder=_safe_dashboard_builder,
+    gradio_builder=build_custom_dashboard,
 )
 
 
@@ -67,19 +32,6 @@ app = create_app(
 async def root():
     """Redirect root to the web interface."""
     return RedirectResponse(url="/web")
-
-
-@app.get("/debug/dashboard", tags=["Debug"])
-async def debug_dashboard():
-    """Show dashboard build error if any."""
-    import gradio as gr
-    return {
-        "dashboard_error": _dashboard_error,
-        "builder_available": _gradio_builder is not None,
-        "builder_call_count": _builder_call_count,
-        "builder_args_info": _builder_args_info,
-        "gradio_version": gr.__version__,
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -225,17 +177,17 @@ async def api_schema():
             "3_step_fast_path": {
                 "sequence": ["investigate", "approve_refund", "reschedule"],
                 "cost": 2350,
-                "description": "Fastest resolution — use when SLA is tight (≤3 steps)",
+                "description": "Fastest resolution — use when SLA is tight (<=3 steps)",
             },
             "4_step_cheap_path": {
                 "sequence": ["investigate", "escalate", "file_claim", "reschedule"],
                 "cost": 1350,
-                "description": "Cheapest resolution — use when SLA allows (≥4 steps)",
+                "description": "Cheapest resolution — use when SLA allows (>=4 steps)",
             },
             "tips": [
                 "Always investigate before resolution actions",
                 "Work on ships with tightest SLA first",
-                "Use 4-step cheap path when SLA allows (≥4 steps remaining)",
+                "Use 4-step cheap path when SLA allows (>=4 steps remaining)",
                 "After resolving salvageable ships, investigate remaining for DQ points",
                 "Act on higher-priority shipments first for better DQ score",
             ],

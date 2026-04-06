@@ -300,10 +300,7 @@ def build_custom_dashboard(
 
     # ── Build the dashboard ─────────────────────────────────────────
 
-    # Inject tab-override CSS via head= so it applies globally (not sandboxed).
-    # gr.HTML <style> tags are sandboxed in Gradio 6.x and don't affect parent elements.
-    _head_css = f"<style>{TAB_OVERRIDE_CSS}</style>"
-    with gr.Blocks(head=_head_css) as dashboard:
+    with gr.Blocks() as dashboard:
         gr.HTML(f"<style>{CUSTOM_CSS}</style>")
 
         with gr.Sidebar(position="left", open=True):

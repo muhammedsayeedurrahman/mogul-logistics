@@ -142,24 +142,9 @@ CUSTOM_CSS = """
 """
 
 TAB_OVERRIDE_CSS = """
-/* Hide tab navigation bar — all possible Gradio selectors */
-.tab-nav,
-.tabs > .tab-nav,
-div.tab-nav,
-[role="tablist"],
-nav.tab-nav,
-.gradio-container .tab-nav { display: none !important; height: 0 !important; overflow: hidden !important; }
-
-/* Hide all tab panels, force the last one (Custom) visible */
-.tabitem,
-div.tabitem,
-[role="tabpanel"] { display: none !important; }
-.tabitem:last-of-type,
-div.tabitem:last-of-type,
-[role="tabpanel"]:last-of-type { display: block !important; }
-
-/* Also hide the TabbedInterface title bar */
-.gradio-container h1:first-of-type { display: none !important; }
+/* Style the tab bar to highlight the Custom tab */
+.tab-nav button[aria-selected="false"] { opacity: 0.6; }
+.tab-nav button[aria-selected="true"] { border-bottom: 2px solid #40c4ff !important; }
 """
 
 AUTO_SWITCH_JS = """
@@ -167,36 +152,6 @@ AUTO_SWITCH_JS = """
   document.body.classList.add('dark');
   var gc = document.querySelector('.gradio-container');
   if (gc) gc.classList.add('dark');
-
-  function switchToCustom() {
-    /* Click the Custom tab — try every possible selector */
-    var buttons = document.querySelectorAll('button');
-    buttons.forEach(function(b) {
-      if (b.textContent.trim() === 'Custom') b.click();
-    });
-
-    /* Also inject CSS dynamically since gr.HTML styles may be sandboxed */
-    if (!document.getElementById('mogul-tab-css')) {
-      var style = document.createElement('style');
-      style.id = 'mogul-tab-css';
-      style.textContent = [
-        '.tab-nav, [role="tablist"] { display:none !important; height:0 !important; }',
-        '.tabitem, [role="tabpanel"] { display:none !important; }',
-        '.tabitem:last-child, [role="tabpanel"]:last-child { display:block !important; }',
-        '.tabitem:last-of-type, [role="tabpanel"]:last-of-type { display:block !important; }',
-        '.gradio-container > h1:first-of-type { display:none !important; }',
-      ].join('\\n');
-      document.head.appendChild(style);
-    }
-  }
-
-  /* Fire aggressively: immediately and at multiple delays */
-  switchToCustom();
-  setTimeout(switchToCustom, 50);
-  setTimeout(switchToCustom, 200);
-  setTimeout(switchToCustom, 500);
-  setTimeout(switchToCustom, 1000);
-  setTimeout(switchToCustom, 2000);
 
   /* Auto-scroll: watch for cinematic feed updates and scroll into view */
   var scrollObserver = new MutationObserver(function(mutations) {
