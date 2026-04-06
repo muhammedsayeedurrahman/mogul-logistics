@@ -300,7 +300,8 @@ def build_custom_dashboard(
 
     # ── Build the dashboard ─────────────────────────────────────────
 
-    with gr.Blocks(css=CUSTOM_CSS + "\n" + TAB_OVERRIDE_CSS) as dashboard:
+    with gr.Blocks() as dashboard:
+        gr.HTML(f"<style>{CUSTOM_CSS}\n{TAB_OVERRIDE_CSS}</style>")
 
         with gr.Sidebar(position="left", open=True):
             gr.HTML(
