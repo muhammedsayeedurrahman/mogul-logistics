@@ -168,8 +168,8 @@ AUTO_SWITCH_JS = """
   var gc = document.querySelector('.gradio-container');
   if (gc) gc.classList.add('dark');
 
-  /* Click the Custom tab (try multiple selector patterns) */
-  setTimeout(function() {
+  /* Click the Custom tab immediately (try multiple selector patterns) */
+  function switchToCustom() {
     document.querySelectorAll('button[role="tab"]').forEach(function(t) {
       if (t.textContent.trim() === 'Custom') t.click();
     });
@@ -179,14 +179,15 @@ AUTO_SWITCH_JS = """
     document.querySelectorAll('.tab-nav button, .tab-nav a').forEach(function(t) {
       if (t.textContent.trim() === 'Custom') t.click();
     });
-  }, 500);
-
-  /* Force-hide tab bar via JS (backup for CSS) */
-  setTimeout(function() {
+    /* Force-hide tab bar */
     document.querySelectorAll('.tab-nav, [role="tablist"]').forEach(function(el) {
       el.style.display = 'none';
     });
-  }, 800);
+  }
+  /* Fire immediately, then again after short delay as backup */
+  switchToCustom();
+  setTimeout(switchToCustom, 100);
+  setTimeout(switchToCustom, 300);
 
   /* Auto-scroll: watch for cinematic feed updates and scroll into view */
   var scrollObserver = new MutationObserver(function(mutations) {

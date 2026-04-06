@@ -300,8 +300,7 @@ def build_custom_dashboard(
 
     # ── Build the dashboard ─────────────────────────────────────────
 
-    with gr.Blocks() as dashboard:
-        gr.HTML(f"<style>{CUSTOM_CSS}\n{TAB_OVERRIDE_CSS}</style>")
+    with gr.Blocks(css=CUSTOM_CSS + "\n" + TAB_OVERRIDE_CSS) as dashboard:
 
         with gr.Sidebar(position="left", open=True):
             gr.HTML(
@@ -382,11 +381,7 @@ def build_custom_dashboard(
 
             with gr.Accordion("\U0001f5fa Route Map \u2014 Indian Logistics Network", open=True):
                 route_map_display = gr.HTML(
-                    value=(
-                        '<div style="text-align:center;padding:30px;color:#7a8ea0;'
-                        'font-size:0.85rem">'
-                        'Start an episode to see the route map.</div>'
-                    ),
+                    value=render_route_map(),
                 )
 
             with gr.Row():
