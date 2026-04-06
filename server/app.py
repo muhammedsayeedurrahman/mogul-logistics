@@ -30,16 +30,26 @@ except Exception as e:
     print(f"[WARN] Custom dashboard import failed: {e}", file=sys.stderr)
 
 
+_builder_call_count = 0
+_builder_args_info: str | None = None
+
+
 def _safe_dashboard_builder(*args, **kwargs):
     """Wrapper that catches dashboard build errors for diagnostics."""
-    global _dashboard_error
+    global _dashboard_error, _builder_call_count, _builder_args_info
+    _builder_call_count += 1
+    _builder_args_info = f"args={len(args)}, kwargs={list(kwargs.keys())}"
+    print(f"[DEBUG] Dashboard builder called (#{_builder_call_count}): {_builder_args_info}", file=sys.stderr)
     if _gradio_builder is None:
-        raise RuntimeError(f"Dashboard import failed:\n{_dashboard_error}")
+        _dashboard_error = f"Dashboard import failed (original error above)"
+        raise RuntimeError(_dashboard_error)
     try:
-        return _gradio_builder(*args, **kwargs)
+        result = _gradio_builder(*args, **kwargs)
+        print(f"[DEBUG] Dashboard builder succeeded, type={type(result).__name__}", file=sys.stderr)
+        return result
     except Exception as e:
         _dashboard_error = traceback.format_exc()
-        print(f"[WARN] Custom dashboard build failed: {e}", file=sys.stderr)
+        print(f"[WARN] Custom dashboard build failed:\n{_dashboard_error}", file=sys.stderr)
         raise
 
 
@@ -65,6 +75,8 @@ async def debug_dashboard():
     return {
         "dashboard_error": _dashboard_error,
         "builder_available": _gradio_builder is not None,
+        "builder_call_count": _builder_call_count,
+        "builder_args_info": _builder_args_info,
     }
 
 
