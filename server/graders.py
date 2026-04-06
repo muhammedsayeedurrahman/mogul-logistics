@@ -4,30 +4,25 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .constants import ACTION_COSTS, PRIORITY_RANK
+
 if TYPE_CHECKING:
     from server.scenarios import Scenario, Shipment
 
     from models import ShipmentAction, ShipmentState
 
 
-# ---------------------------------------------------------------------------
-# Action costs (deducted from budget)
-# ---------------------------------------------------------------------------
-ACTION_COSTS: dict[str, float] = {
-    "investigate": 50.0,
-    "reroute": 2000.0,
-    "escalate": 200.0,
-    "reschedule": 800.0,
-    "file_claim": 300.0,
-    "contact_carrier": 100.0,
-    "approve_refund": 1500.0,
-    "split_shipment": 2500.0,
-}
-
-
 def action_cost(action_type: str) -> float:
-    """Return the cost of an action type."""
-    return ACTION_COSTS.get(action_type, 100.0)
+    """Return the cost of an action type.
+
+    Raises ValueError for unknown action types.
+    """
+    if action_type not in ACTION_COSTS:
+        raise ValueError(
+            f"Unknown action type: {action_type!r}. "
+            f"Valid actions: {sorted(ACTION_COSTS.keys())}"
+        )
+    return ACTION_COSTS[action_type]
 
 
 # ---------------------------------------------------------------------------
@@ -53,7 +48,7 @@ def compute_decision_quality(
     priority_order_score = 0.0
     total_actions = 0
 
-    priority_rank = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    priority_rank = PRIORITY_RANK
     shipment_priority = {s.shipment_id: s.priority for s in shipments}
 
     last_priority_rank = -1

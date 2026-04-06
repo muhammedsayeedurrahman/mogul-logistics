@@ -4,3 +4,8 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 8000
+description: "Shipment exception resolution RL environment with 3 difficulty levels, weighted grading, and cost/SLA optimization"
+tasks:
+  - task_easy
+  - task_medium
+  - task_hard

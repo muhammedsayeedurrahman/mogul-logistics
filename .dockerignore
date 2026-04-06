@@ -1,0 +1,14 @@
+.git/
+.claude/
+__pycache__/
+*.egg-info/
+.venv/
+venv/
+tests/
+*.pyc
+.gitignore
+.dockerignore
+mogul_logistics.egg-info/
+moguls_logistics.egg-info/
+uv.lock
+docker-compose.yml

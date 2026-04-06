@@ -10,12 +10,13 @@ import asyncio
 import json
 import logging
 import os
-import re
 import sys
 import time
-from itertools import permutations
 
 from openenv.core.generic_client import GenericEnvClient
+
+from server.constants import ACTION_COSTS, VALID_ACTIONS
+from server.heuristic import HeuristicPlanner
 
 # ---------------------------------------------------------------------------
 # LLM client setup — HuggingFace router (uses required env vars)
@@ -47,368 +48,55 @@ log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Action metadata (mirrors server/graders.py and environment.py)
-# ---------------------------------------------------------------------------
-
-ACTION_PROGRESS: dict[str, float] = {
-    "investigate": 0.15,
-    "contact_carrier": 0.10,
-    "escalate": 0.20,
-    "reroute": 0.40,
-    "reschedule": 0.35,
-    "file_claim": 0.30,
-    "approve_refund": 0.50,
-    "split_shipment": 0.45,
-}
-
-ACTION_COSTS: dict[str, int] = {
-    "investigate": 50,
-    "contact_carrier": 100,
-    "escalate": 200,
-    "file_claim": 300,
-    "reschedule": 800,
-    "approve_refund": 1500,
-    "reroute": 2000,
-    "split_shipment": 2500,
-}
-
-PRIORITY_RANK: dict[str, int] = {
-    "critical": 0, "high": 1, "medium": 2, "low": 3,
-}
-
-RESOLUTION_ACTIONS = {
-    "reroute", "reschedule", "file_claim",
-    "approve_refund", "split_shipment",
-}
-
-# Fast-path: investigate($50) + approve_refund($1500) + reschedule($800)
-FAST_PATH_COST = 2350
-FAST_PATH_STEPS = 3
-# Cheap-path: investigate($50) + escalate($200) + file_claim($300) + reschedule($800)
-CHEAP_PATH_COST = 1350
-CHEAP_PATH_STEPS = 4
-
-
-# ---------------------------------------------------------------------------
-# Observation parser
-# ---------------------------------------------------------------------------
-
-_SHIP_RE = re.compile(
-    r"(SHP-\d+):\s+\S+\s+\|\s+status=(\w+)\s+\|\s+priority=(\w+)"
-    r"\s+\|\s+progress=(\d+)%\s+\|\s+SLA in (\d+) steps"
-)
-
-
-def _parse_shipments(status_text: str) -> list[dict]:
-    ships: list[dict] = []
-    for m in _SHIP_RE.finditer(status_text):
-        ships.append({
-            "id": m.group(1),
-            "status": m.group(2),
-            "priority": m.group(3),
-            "progress": int(m.group(4)) / 100.0,
-            "sla": int(m.group(5)),
-        })
-    return ships
-
-
-def _min_steps_to_resolve(progress: float, investigated: bool) -> int:
-    if progress >= 0.50 and investigated:
-        return 1
-    if investigated:
-        return 2
-    return 3
-
-
-def _cheap_path_remaining_cost(
-    progress: float, investigated: bool, sla: int,
-) -> int:
-    """Return cheapest remaining cost considering both 3-step and 4-step paths."""
-    if not investigated:
-        # 3-step fast: investigate + approve_refund + reschedule = $2,350
-        fast = ACTION_COSTS["investigate"] + ACTION_COSTS["approve_refund"] + ACTION_COSTS["reschedule"]
-        # 4-step cheap: investigate + escalate + file_claim + reschedule = $1,350
-        cheap = ACTION_COSTS["investigate"] + 200 + 300 + ACTION_COSTS["reschedule"]
-        # Use cheap path only if SLA allows (need 4 steps, so sla must be ≥ 4)
-        return int(cheap if sla >= 4 else fast)
-    # Already investigated
-    if progress >= 0.50:
-        return int(ACTION_COSTS["reschedule"])
-    # 2-step fast: approve_refund + reschedule = $2,300
-    fast = ACTION_COSTS["approve_refund"] + ACTION_COSTS["reschedule"]
-    # 3-step cheap: escalate + file_claim + reschedule = $1,300
-    cheap = 200 + 300 + ACTION_COSTS["reschedule"]
-    return int(cheap if sla >= 3 else fast)
-
-
-# ---------------------------------------------------------------------------
-# Multi-ship planner — find optimal resolution order
-# ---------------------------------------------------------------------------
-
-def _plan_resolution_order(ships: list[dict], total_steps: int, budget: int) -> list[str]:
-    """Find the ordering of salvageable ships that maximizes resolutions.
-
-    Returns list of ship IDs in planned resolution order.
-    """
-    candidates = []
-    for s in ships:
-        if s["status"] in ("resolved", "failed"):
-            continue
-        investigated = (
-            s["progress"] >= 0.14
-            or s["status"] in ("investigating", "action_taken")
-        )
-        steps_needed = _min_steps_to_resolve(s["progress"], investigated)
-        cost_needed = _cheap_path_remaining_cost(s["progress"], investigated, s["sla"])
-        candidates.append({
-            **s,
-            "investigated": investigated,
-            "steps_needed": steps_needed,
-            "cost_needed": cost_needed,
-        })
-
-    if not candidates:
-        return []
-
-    # Filter to only those that COULD be resolved (enough SLA at start)
-    potentially_salvageable = [
-        c for c in candidates if c["sla"] >= c["steps_needed"]
-    ]
-
-    if not potentially_salvageable:
-        # Nothing salvageable — return by priority for DQ farming
-        candidates.sort(key=lambda s: PRIORITY_RANK.get(s["priority"], 3))
-        return [c["id"] for c in candidates]
-
-    # For small sets, try all permutations; for large, use greedy
-    if len(potentially_salvageable) <= 6:
-        best_order: list[str] = []
-        best_count = 0
-
-        for perm in permutations(potentially_salvageable):
-            elapsed = 0
-            cost_used = 0
-            resolved_count = 0
-            order: list[str] = []
-
-            for ship in perm:
-                steps_needed = ship["steps_needed"]
-                effective_sla = ship["sla"] - elapsed
-                cost_needed = ship["cost_needed"]
-
-                if effective_sla >= steps_needed and (cost_used + cost_needed) <= budget:
-                    resolved_count += 1
-                    elapsed += steps_needed
-                    cost_used += cost_needed
-                    order.append(ship["id"])
-
-                if elapsed >= total_steps:
-                    break
-
-            if resolved_count > best_count:
-                best_count = resolved_count
-                best_order = order
-
-        return best_order
-    else:
-        # Greedy: sort by effective deadline (sla - steps_needed)
-        potentially_salvageable.sort(
-            key=lambda s: (s["sla"] - s["steps_needed"], s["steps_needed"])
-        )
-        order: list[str] = []
-        elapsed = 0
-        cost_used = 0
-        for ship in potentially_salvageable:
-            effective_sla = ship["sla"] - elapsed
-            if effective_sla >= ship["steps_needed"] and (cost_used + ship["cost_needed"]) <= budget:
-                order.append(ship["id"])
-                elapsed += ship["steps_needed"]
-                cost_used += ship["cost_needed"]
-        return order
-
-
-# ---------------------------------------------------------------------------
-# Stateful heuristic agent
-# ---------------------------------------------------------------------------
-
-class HeuristicPlanner:
-    """Tracks resolution plan across steps."""
-
-    def __init__(self) -> None:
-        self.plan: list[str] = []
-        self.plan_idx: int = 0
-        self.resolved_ids: set[str] = set()
-        self.investigated_ids: set[str] = set()
-        self.dq_investigated: set[str] = set()
-
-    def pick_action(self, observation: dict) -> dict:
-        status_text = observation.get("shipment_status", "")
-        budget = observation.get("budget_remaining", 0)
-        time_left = observation.get("time_remaining", 0)
-
-        ships = _parse_shipments(status_text)
-        if not ships:
-            return _make_action("investigate", "SHP-001")
-
-        ship_map = {s["id"]: s for s in ships}
-
-        # Track resolved ships
-        for s in ships:
-            if s["status"] == "resolved":
-                self.resolved_ids.add(s["id"])
-
-        active = [s for s in ships if s["status"] not in ("resolved", "failed")]
-
-        # Build/rebuild plan if needed
-        if not self.plan or self.plan_idx >= len(self.plan):
-            self.plan = _plan_resolution_order(active, time_left, budget)
-            self.plan_idx = 0
-
-        # Remove already-resolved or failed from plan
-        while (self.plan_idx < len(self.plan)
-               and self.plan[self.plan_idx] in self.resolved_ids):
-            self.plan_idx += 1
-
-        # Check if current target is still salvageable
-        if self.plan_idx < len(self.plan):
-            target_id = self.plan[self.plan_idx]
-            target = ship_map.get(target_id)
-            if target and target["status"] == "failed":
-                self.plan_idx += 1
-
-        # If plan exhausted, do DQ farming
-        if self.plan_idx >= len(self.plan):
-            return self._dq_farm(ships, budget, time_left)
-
-        target_id = self.plan[self.plan_idx]
-        target = ship_map.get(target_id)
-
-        if not target or target["status"] in ("resolved", "failed"):
-            self.plan_idx += 1
-            return self._dq_farm(ships, budget, time_left)
-
-        return self._resolve_ship(target, budget)
-
-    def _resolve_ship(self, target: dict, budget: int) -> dict:
-        sid = target["id"]
-        prog = target["progress"]
-        investigated = (
-            prog >= 0.14
-            or target["status"] in ("investigating", "action_taken")
-            or sid in self.investigated_ids
-        )
-
-        # Step 1: investigate if needed
-        if not investigated and prog < 0.001:
-            if budget >= ACTION_COSTS["investigate"]:
-                self.investigated_ids.add(sid)
-                return _make_action("investigate", sid)
-
-        # Mark as investigated if progress shows it
-        if prog >= 0.14:
-            self.investigated_ids.add(sid)
-            investigated = True
-
-        # Can a single resolution action finish it?
-        needed = 1.0 - prog
-        if investigated:
-            finishing = []
-            for atype in RESOLUTION_ACTIONS:
-                if ACTION_PROGRESS[atype] >= needed and ACTION_COSTS[atype] <= budget:
-                    finishing.append((atype, ACTION_COSTS[atype]))
-            if finishing:
-                finishing.sort(key=lambda x: x[1])
-                return _make_action(finishing[0][0], sid)
-
-        # Cheap 4-step path: escalate($200) → file_claim($300) → reschedule($800)
-        # Use when SLA allows (≥3 steps remaining) — saves $1,000 vs fast path
-        if investigated and target["sla"] >= 3:
-            cheap_remaining = 200 + 300 + 800  # $1,300
-            if prog < 0.20 and budget >= cheap_remaining:
-                return _make_action("escalate", sid)
-            if 0.20 <= prog < 0.40 and budget >= (300 + 800):
-                return _make_action("file_claim", sid)
-
-        # Fast path: approve_refund then reschedule (when SLA is tight)
-        if investigated:
-            if prog < 0.50 and budget >= ACTION_COSTS["approve_refund"]:
-                return _make_action("approve_refund", sid)
-            if budget >= ACTION_COSTS["reschedule"]:
-                return _make_action("reschedule", sid)
-
-        # Fallback
-        if not investigated and budget >= ACTION_COSTS["investigate"]:
-            self.investigated_ids.add(sid)
-            return _make_action("investigate", sid)
-
-        return _make_action("contact_carrier", sid)
-
-    def _dq_farm(self, ships: list[dict], budget: int, time_left: int) -> dict:
-        """Use remaining steps to investigate un-investigated ships for DQ points.
-
-        Priority order matters for DQ scoring, so investigate highest priority first.
-        """
-        uninvestigated = [
-            s for s in ships
-            if s["status"] not in ("resolved",)
-            and s["id"] not in self.investigated_ids
-            and s["id"] not in self.dq_investigated
-            and s["progress"] < 0.001
-        ]
-
-        # Sort by priority (critical first)
-        uninvestigated.sort(
-            key=lambda s: PRIORITY_RANK.get(s["priority"], 3)
-        )
-
-        for s in uninvestigated:
-            if budget >= ACTION_COSTS["investigate"]:
-                self.dq_investigated.add(s["id"])
-                self.investigated_ids.add(s["id"])
-                return _make_action("investigate", s["id"])
-
-        # If all investigated or no budget, contact_carrier on highest priority active
-        active = [s for s in ships if s["status"] not in ("resolved", "failed")]
-        if active:
-            active.sort(key=lambda s: PRIORITY_RANK.get(s["priority"], 3))
-            sid = active[0]["id"]
-            if budget >= ACTION_COSTS["contact_carrier"]:
-                return _make_action("contact_carrier", sid)
-            return _make_action("investigate", sid)
-
-        return _make_action("investigate", "SHP-001")
-
-
-def _make_action(atype: str, sid: str) -> dict:
-    return {"action_type": atype, "target_shipment_id": sid, "parameters": {}}
-
-
-# ---------------------------------------------------------------------------
-# LLM agent — used for hackathon compliance
+# LLM agent — primary decision maker with heuristic fallback
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """\
-You are a logistics exception resolution agent. Resolve shipment exceptions \
-before their SLA deadlines expire. Each step decrements every active \
-shipment's SLA by 1.
+You are a logistics exception resolution agent for MOGUL Logistics. \
+Your goal: resolve as many shipment exceptions as possible before SLA \
+deadlines expire, while staying under budget.
+
+IMPORTANT RULES:
+- Each step decrements ALL active shipments' SLA by 1.
+- You must investigate a shipment before using resolution actions on it.
+- Resolution actions: reroute ($2000), reschedule ($800), file_claim ($300), \
+approve_refund ($1500), split_shipment ($2500).
+- Non-resolution actions: investigate ($50), contact_carrier ($100), escalate ($200).
+
+OPTIMAL STRATEGY:
+1. Work on the shipment with the TIGHTEST SLA first (fewest steps remaining).
+2. Skip doomed shipments (SLA < 3 and progress = 0%).
+3. If already working on a shipment (progress > 0%), FINISH IT first.
+4. Fast path (3 steps, $2,350): investigate -> approve_refund -> reschedule = 100%.
+5. Cheap path (4 steps, $1,350): investigate -> escalate -> file_claim -> reschedule = 100%.
+6. Use cheap path when SLA allows (>= 4 steps), fast path when SLA is tight.
+7. After resolving all salvageable ships, investigate remaining by priority for DQ points.
 
 Respond with ONLY a JSON object (no markdown, no extra text):
 {"action_type": "<action>", "target_shipment_id": "<SHP-XXX>", "parameters": {}}
-
-STRATEGY — follow this EXACTLY:
-1. Work on ONE shipment at a time — lowest SLA, NOT resolved/failed.
-2. Skip doomed shipments (SLA < 3 and progress = 0%).
-3. If already working on a shipment (progress > 0%), FINISH IT first.
-4. For each shipment use: investigate -> approve_refund -> reschedule = 100%.
-5. The LAST action MUST be reschedule, file_claim, approve_refund, reroute, \
-or split_shipment — only these trigger resolution.
 """
+
+
+def _is_valid_llm_action(action: dict, observation: dict) -> bool:
+    """Check if an LLM-produced action is valid and affordable."""
+    atype = action.get("action_type", "")
+    target = action.get("target_shipment_id", "")
+    if atype not in VALID_ACTIONS:
+        return False
+    if not target:
+        return False
+    cost = ACTION_COSTS.get(atype, float("inf"))
+    budget = observation.get("budget_remaining", 0)
+    if cost > budget:
+        return False
+    return True
 
 
 def ask_llm(
     messages: list[dict],
     observation: dict,
 ) -> dict:
+    """Query the LLM for an action decision."""
     user_msg = json.dumps(observation, indent=2, default=str)
     messages.append({"role": "user", "content": user_msg})
 
@@ -422,6 +110,7 @@ def ask_llm(
         text = response.choices[0].message.content.strip()
         messages.append({"role": "assistant", "content": text})
 
+        # Strip markdown code fences if present
         if text.startswith("```"):
             text = text.split("\n", 1)[-1]
         if text.endswith("```"):
@@ -429,7 +118,11 @@ def ask_llm(
         text = text.strip()
 
         return json.loads(text)
-    except Exception:
+    except json.JSONDecodeError as exc:
+        log.warning("LLM returned invalid JSON: %s", exc)
+        return {}
+    except Exception as exc:
+        log.warning("LLM call failed: %s", exc)
         return {}
 
 
@@ -438,21 +131,35 @@ def select_action(
     messages: list[dict],
     planner: HeuristicPlanner,
 ) -> dict:
-    h_action = planner.pick_action(observation)
+    """LLM-primary action selection with heuristic fallback.
 
-    # Consult the LLM (required env vars usage for hackathon)
+    1. Ask LLM for an action
+    2. Validate it (correct type, valid target, affordable)
+    3. If valid -> use LLM action
+    4. If invalid -> fall back to heuristic
+    """
+    # LLM gets first try
     llm_action = ask_llm(messages, observation)
 
-    chosen = h_action
+    if llm_action and _is_valid_llm_action(llm_action, observation):
+        llm_action.setdefault("parameters", {})
+        log.info(
+            "  [LLM] %s(%s)",
+            llm_action["action_type"],
+            llm_action["target_shipment_id"],
+        )
+        return llm_action
 
-    if (
-        llm_action.get("target_shipment_id") == h_action["target_shipment_id"]
-        and llm_action.get("action_type") == h_action["action_type"]
-    ):
-        chosen = llm_action
-
-    chosen.setdefault("parameters", {})
-    return chosen
+    # Heuristic fallback
+    h_action, explanation = planner.pick_action(observation)
+    log.info(
+        "  [HEURISTIC] %s(%s) — %s",
+        h_action["action_type"],
+        h_action["target_shipment_id"],
+        explanation,
+    )
+    h_action.setdefault("parameters", {})
+    return h_action
 
 
 # ---------------------------------------------------------------------------
@@ -548,7 +255,7 @@ async def main() -> None:
             scores[task_id] = score
         except Exception as exc:
             log_end(success=False, steps=0, score=0.0, rewards=[])
-            print(f"[DEBUG] task={task_id} error={exc}", flush=True)
+            log.error("task=%s error=%s", task_id, exc)
             scores[task_id] = 0.0
 
     elapsed = time.time() - start

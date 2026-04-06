@@ -56,7 +56,12 @@ class ShipmentAction(Action):
             v = v.strip()
             if not v:
                 return {}
-            return json.loads(v)
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError as exc:
+                raise ValueError(
+                    f"Invalid JSON in parameters: {exc}. Input: {v!r}"
+                ) from exc
         return v
 
 

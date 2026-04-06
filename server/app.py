@@ -14,6 +14,7 @@ from fastapi.responses import RedirectResponse
 from openenv.core.env_server import create_app
 
 from models import ShipmentAction, ShipmentObservation
+from server.constants import ACTION_COSTS, ACTION_PROGRESS, RESOLUTION_ACTIONS
 from server.environment import ShipmentEnvironment
 from server.gradio_custom import build_custom_dashboard
 
@@ -37,79 +38,50 @@ async def root():
 # API schema & MCP tools — agent-friendly discovery endpoints
 # ---------------------------------------------------------------------------
 
+_ACTION_DESCRIPTIONS: dict[str, str] = {
+    "investigate": (
+        "Investigate a shipment exception. Reveals exception details and "
+        "enables resolution actions. Always do this first."
+    ),
+    "contact_carrier": (
+        "Contact the shipping carrier for status updates. "
+        "Low cost, small progress boost."
+    ),
+    "escalate": (
+        "Escalate the issue to management for expedited review. "
+        "Moderate cost, adds 20% progress."
+    ),
+    "file_claim": (
+        "File an insurance or damage claim. Requires prior investigation. "
+        "Can trigger resolution if progress reaches 100%."
+    ),
+    "reschedule": (
+        "Reschedule the shipment for a new delivery window. "
+        "Requires prior investigation. Good finishing action."
+    ),
+    "approve_refund": (
+        "Approve a refund for the shipment exception. "
+        "Requires prior investigation. Largest single progress boost."
+    ),
+    "reroute": (
+        "Reroute the shipment through an alternative path. "
+        "Requires prior investigation. High cost."
+    ),
+    "split_shipment": (
+        "Split the shipment into multiple smaller shipments. "
+        "Requires prior investigation. Most expensive action."
+    ),
+}
+
 _ACTION_META = {
-    "investigate": {
-        "cost": 50, "progress": 0.15,
-        "requires_investigation": False,
-        "is_resolution_action": False,
-        "description": (
-            "Investigate a shipment exception. Reveals exception details and "
-            "enables resolution actions. Always do this first."
-        ),
-    },
-    "contact_carrier": {
-        "cost": 100, "progress": 0.10,
-        "requires_investigation": False,
-        "is_resolution_action": False,
-        "description": (
-            "Contact the shipping carrier for status updates. "
-            "Low cost, small progress boost."
-        ),
-    },
-    "escalate": {
-        "cost": 200, "progress": 0.20,
-        "requires_investigation": False,
-        "is_resolution_action": False,
-        "description": (
-            "Escalate the issue to management for expedited review. "
-            "Moderate cost, adds 20% progress."
-        ),
-    },
-    "file_claim": {
-        "cost": 300, "progress": 0.30,
-        "requires_investigation": True,
-        "is_resolution_action": True,
-        "description": (
-            "File an insurance or damage claim. Requires prior investigation. "
-            "Can trigger resolution if progress reaches 100%."
-        ),
-    },
-    "reschedule": {
-        "cost": 800, "progress": 0.35,
-        "requires_investigation": True,
-        "is_resolution_action": True,
-        "description": (
-            "Reschedule the shipment for a new delivery window. "
-            "Requires prior investigation. Good finishing action."
-        ),
-    },
-    "approve_refund": {
-        "cost": 1500, "progress": 0.50,
-        "requires_investigation": True,
-        "is_resolution_action": True,
-        "description": (
-            "Approve a refund for the shipment exception. "
-            "Requires prior investigation. Largest single progress boost."
-        ),
-    },
-    "reroute": {
-        "cost": 2000, "progress": 0.40,
-        "requires_investigation": True,
-        "is_resolution_action": True,
-        "description": (
-            "Reroute the shipment through an alternative path. "
-            "Requires prior investigation. High cost."
-        ),
-    },
-    "split_shipment": {
-        "cost": 2500, "progress": 0.45,
-        "requires_investigation": True,
-        "is_resolution_action": True,
-        "description": (
-            "Split the shipment into multiple smaller shipments. "
-            "Requires prior investigation. Most expensive action."
-        ),
-    },
+    action: {
+        "cost": int(ACTION_COSTS[action]),
+        "progress": ACTION_PROGRESS[action],
+        "requires_investigation": action in RESOLUTION_ACTIONS,
+        "is_resolution_action": action in RESOLUTION_ACTIONS,
+        "description": _ACTION_DESCRIPTIONS[action],
+    }
+    for action in ACTION_COSTS
 }
 
 

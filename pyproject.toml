@@ -19,6 +19,11 @@ server = "server.app:main"
 
 [project.optional-dependencies]
 inference = ["openai>=1.0"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.setuptools.packages.find]
 include = ["server*", "models*", "client*"]

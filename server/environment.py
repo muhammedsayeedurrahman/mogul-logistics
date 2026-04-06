@@ -16,33 +16,15 @@ from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import EnvironmentMetadata
 
 from models import ShipmentAction, ShipmentObservation, ShipmentState
-from server.graders import ACTION_COSTS, action_cost, grade_episode
+from server.constants import (
+    ACTION_COSTS,
+    ACTION_PROGRESS,
+    RESOLUTION_ACTIONS,
+    VALID_ACTIONS,
+)
+from server.graders import action_cost, grade_episode
 from server.scenarios import SCENARIO_GENERATORS, Scenario, Shipment
 from server.tasks import DEFAULT_TASK_ID, TASKS
-
-# Valid action types
-VALID_ACTIONS = set(ACTION_COSTS.keys())
-
-# Actions that advance resolution
-RESOLUTION_ACTIONS = {
-    "reroute",
-    "reschedule",
-    "file_claim",
-    "approve_refund",
-    "split_shipment",
-}
-
-# How much progress each action contributes
-ACTION_PROGRESS = {
-    "investigate": 0.15,
-    "contact_carrier": 0.10,
-    "escalate": 0.20,
-    "reroute": 0.40,
-    "reschedule": 0.35,
-    "file_claim": 0.30,
-    "approve_refund": 0.50,
-    "split_shipment": 0.45,
-}
 
 
 class ShipmentEnvironment(
@@ -346,6 +328,11 @@ class ShipmentEnvironment(
         if shipment.resolution_progress > 0:
             return 0.1 * shipment.resolution_progress
         return 0.0
+
+    def close(self) -> None:
+        """Clean up environment resources."""
+        self._shipments.clear()
+        self._actions_history.clear()
 
     def _build_observation(
         self,

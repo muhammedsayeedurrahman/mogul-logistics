@@ -100,6 +100,60 @@ Scores are in the range [0.0, 1.0] with four weighted components:
 | SLA compliance | 20% | Fraction of shipments within SLA |
 | Decision quality | 15% | Investigating before acting, priority ordering |
 
+## Architecture
+
+```
+                    ┌─────────────────────────────────┐
+                    │         inference.py             │
+                    │   LLM Agent + Heuristic Fallback │
+                    └──────────┬──────────────────────┘
+                               │ HTTP (reset/step)
+                    ┌──────────▼──────────────────────┐
+                    │       FastAPI (server/app.py)    │
+                    │   /reset  /step  /state  /health │
+                    │   /api/schema  /api/mcp/tools    │
+                    └──────────┬──────────────────────┘
+                               │
+          ┌────────────────────▼────────────────────┐
+          │     ShipmentEnvironment (environment.py) │
+          │   reset() → Observation                  │
+          │   step(Action) → Observation + Reward    │
+          └──────┬──────────────────┬───────────────┘
+                 │                  │
+    ┌────────────▼───────┐  ┌──────▼──────────────┐
+    │  scenarios.py      │  │  graders.py         │
+    │  Easy/Medium/Hard  │  │  grade_episode()    │
+    │  scenario gen      │  │  4-component score  │
+    └────────────────────┘  └─────────────────────┘
+```
+
+## Strategy Guide
+
+The agent must resolve shipments before SLA deadlines while staying under budget:
+
+| Path | Steps | Cost | When to Use |
+|------|-------|------|-------------|
+| **Fast** (3 steps) | investigate → approve_refund → reschedule | $2,350 | SLA is tight (< 4 steps) |
+| **Cheap** (4 steps) | investigate → escalate → file_claim → reschedule | $1,350 | SLA allows (>= 4 steps) |
+
+**Tips:**
+- Always investigate before resolution actions
+- Work on the shipment with the tightest SLA first
+- Use the cheap path when SLA allows — saves $1,000 per shipment
+- After resolving salvageable ships, investigate remaining for decision quality points
+- Higher-priority shipments first for better DQ score
+
+## Evaluation
+
+Scores are computed as a weighted composite in [0.0, 1.0]:
+
+| Component | Weight | Formula |
+|-----------|--------|---------|
+| Resolution rate | 40% | `resolved / total` |
+| Cost efficiency | 25% | `1 - (cost_spent / budget)` |
+| SLA compliance | 20% | `1 - (violations / total)` |
+| Decision quality | 15% | `0.6 * investigate_first + 0.4 * priority_order` |
+
 ## Connecting as an External Agent
 
 Any HTTP client can interact with the environment:
@@ -139,6 +193,22 @@ uvicorn server.app:app --port 8000
 # Run the inference agent
 python inference.py
 ```
+
+## Testing
+
+```bash
+# Install dev dependencies
+pip install -e ".[dev]"
+
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_graders.py -v
+pytest tests/test_environment.py -v
+```
+
+Tests cover: grading math, environment step/reset/validation, SLA mechanics, scenario generation, Pydantic model validation, and heuristic planner behavior.
 
 ## Docker
 
