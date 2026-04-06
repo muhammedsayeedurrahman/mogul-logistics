@@ -18,6 +18,34 @@ from server.constants import ACTION_COSTS, ACTION_PROGRESS, RESOLUTION_ACTIONS
 from server.environment import ShipmentEnvironment
 from server.gradio_custom import build_custom_dashboard
 
+# ---------------------------------------------------------------------------
+# Monkey-patch gr.TabbedInterface so the Custom dashboard loads first.
+# OpenEnv hardcodes [Playground, Custom] order — we swap it so judges land
+# on our polished dashboard instead of the generic Playground tab.
+# ---------------------------------------------------------------------------
+import gradio as gr
+
+_OrigTabbedInterface = gr.TabbedInterface
+
+
+class _DashboardFirstTabs(_OrigTabbedInterface):
+    """TabbedInterface subclass that puts our dashboard tab first."""
+
+    def __init__(self, interface_list, tab_names=None, **kwargs):
+        if (
+            tab_names
+            and len(tab_names) == 2
+            and tab_names[0] == "Playground"
+            and tab_names[1] == "Custom"
+        ):
+            interface_list = list(reversed(interface_list))
+            tab_names = ["Dashboard", "Playground"]
+        super().__init__(interface_list, tab_names=tab_names, **kwargs)
+
+
+gr.TabbedInterface = _DashboardFirstTabs
+# ---------------------------------------------------------------------------
+
 app = create_app(
     ShipmentEnvironment,
     ShipmentAction,

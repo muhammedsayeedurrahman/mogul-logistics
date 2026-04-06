@@ -14,6 +14,8 @@ from __future__ import annotations
 import asyncio
 import sys
 
+import pytest
+
 from openenv.core.generic_client import GenericEnvClient
 
 ENV_URL = "http://localhost:8000"
@@ -38,6 +40,7 @@ def print_obs(obs: dict, step_label: str) -> None:
 # ------------------------------------------------------------------
 # Test 1: Easy Task — Single Delayed Shipment
 # ------------------------------------------------------------------
+@pytest.mark.skip(reason="Integration test — run with: python test_all.py")
 async def test_easy() -> float:
     print(f"\n{DIVIDER}")
     print("TEST 1: EASY — Single Delayed Shipment")
@@ -80,6 +83,7 @@ async def test_easy() -> float:
 # ------------------------------------------------------------------
 # Test 2: Medium Task — Multi-Exception Triage
 # ------------------------------------------------------------------
+@pytest.mark.skip(reason="Integration test — run with: python test_all.py")
 async def test_medium() -> float:
     print(f"\n{DIVIDER}")
     print("TEST 2: MEDIUM — Multi-Exception Triage (4 shipments)")
@@ -120,6 +124,7 @@ async def test_medium() -> float:
 # ------------------------------------------------------------------
 # Test 3: Hard Task — Supply Chain Disruption
 # ------------------------------------------------------------------
+@pytest.mark.skip(reason="Integration test — run with: python test_all.py")
 async def test_hard() -> float:
     print(f"\n{DIVIDER}")
     print("TEST 3: HARD — Supply Chain Disruption (8 shipments)")
