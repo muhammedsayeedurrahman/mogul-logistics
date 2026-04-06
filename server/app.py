@@ -72,11 +72,13 @@ async def root():
 @app.get("/debug/dashboard", tags=["Debug"])
 async def debug_dashboard():
     """Show dashboard build error if any."""
+    import gradio as gr
     return {
         "dashboard_error": _dashboard_error,
         "builder_available": _gradio_builder is not None,
         "builder_call_count": _builder_call_count,
         "builder_args_info": _builder_args_info,
+        "gradio_version": gr.__version__,
     }
 
 
