@@ -168,26 +168,35 @@ AUTO_SWITCH_JS = """
   var gc = document.querySelector('.gradio-container');
   if (gc) gc.classList.add('dark');
 
-  /* Click the Custom tab immediately (try multiple selector patterns) */
   function switchToCustom() {
-    document.querySelectorAll('button[role="tab"]').forEach(function(t) {
-      if (t.textContent.trim() === 'Custom') t.click();
+    /* Click the Custom tab — try every possible selector */
+    var buttons = document.querySelectorAll('button');
+    buttons.forEach(function(b) {
+      if (b.textContent.trim() === 'Custom') b.click();
     });
-    document.querySelectorAll('[role="tab"]').forEach(function(t) {
-      if (t.textContent.trim() === 'Custom') t.click();
-    });
-    document.querySelectorAll('.tab-nav button, .tab-nav a').forEach(function(t) {
-      if (t.textContent.trim() === 'Custom') t.click();
-    });
-    /* Force-hide tab bar */
-    document.querySelectorAll('.tab-nav, [role="tablist"]').forEach(function(el) {
-      el.style.display = 'none';
-    });
+
+    /* Also inject CSS dynamically since gr.HTML styles may be sandboxed */
+    if (!document.getElementById('mogul-tab-css')) {
+      var style = document.createElement('style');
+      style.id = 'mogul-tab-css';
+      style.textContent = [
+        '.tab-nav, [role="tablist"] { display:none !important; height:0 !important; }',
+        '.tabitem, [role="tabpanel"] { display:none !important; }',
+        '.tabitem:last-child, [role="tabpanel"]:last-child { display:block !important; }',
+        '.tabitem:last-of-type, [role="tabpanel"]:last-of-type { display:block !important; }',
+        '.gradio-container > h1:first-of-type { display:none !important; }',
+      ].join('\\n');
+      document.head.appendChild(style);
+    }
   }
-  /* Fire immediately, then again after short delay as backup */
+
+  /* Fire aggressively: immediately and at multiple delays */
   switchToCustom();
-  setTimeout(switchToCustom, 100);
-  setTimeout(switchToCustom, 300);
+  setTimeout(switchToCustom, 50);
+  setTimeout(switchToCustom, 200);
+  setTimeout(switchToCustom, 500);
+  setTimeout(switchToCustom, 1000);
+  setTimeout(switchToCustom, 2000);
 
   /* Auto-scroll: watch for cinematic feed updates and scroll into view */
   var scrollObserver = new MutationObserver(function(mutations) {
