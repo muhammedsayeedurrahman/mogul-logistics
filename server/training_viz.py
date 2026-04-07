@@ -7,11 +7,11 @@ from pathlib import Path
 
 _ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
-_GREEN = "#00e676"
+_GREEN = "#2B7D6D"
 _RED = "#ff5252"
-_BLUE = "#40c4ff"
+_BLUE = "#0668E1"
 _YELLOW = "#ffd740"
-_ORANGE = "#ff9100"
+_ORANGE = "#EE4C2C"
 
 
 def render_training_results() -> str:
@@ -23,7 +23,7 @@ def render_training_results() -> str:
     curve_path = _ASSETS / "training_curve.json"
     if not curve_path.exists():
         return (
-            '<div style="text-align:center;padding:20px;color:#7a8ea0">'
+            '<div style="text-align:center;padding:20px;color:#666666">'
             "Run <code>python train_demo.py</code> to generate training results.</div>"
         )
 
@@ -65,7 +65,7 @@ def render_training_results() -> str:
             f'<span>{emoji} {label}</span>'
             f'<span style="color:{color};font-weight:700;font-size:1.1rem">'
             f'{value:.4f}</span></div>'
-            f'<div style="background:#1e3a5f;height:20px;border-radius:10px;'
+            f'<div style="background:#404040;height:20px;border-radius:10px;'
             f'overflow:hidden">'
             f'<div style="background:linear-gradient(90deg,{color}80,{color});'
             f'height:100%;width:{pct:.1f}%;border-radius:10px;'
@@ -73,29 +73,29 @@ def render_training_results() -> str:
         )
 
     return (
-        f'<div style="background:linear-gradient(135deg,#0d2137,#162332);'
-        f'border:1px solid #1e3a5f;border-radius:10px;padding:20px">'
+        f'<div style="background:linear-gradient(135deg,#1c1c1c,#262626);'
+        f'border:1px solid #404040;border-radius:10px;padding:20px">'
         f'<div style="display:flex;justify-content:space-between;align-items:center;'
         f'margin-bottom:16px">'
         f'<div>'
-        f'<div style="font-size:0.82rem;color:#7a8ea0;text-transform:uppercase;'
+        f'<div style="font-size:0.82rem;color:#666666;text-transform:uppercase;'
         f'letter-spacing:0.12em;font-weight:600">Agent Performance Comparison</div>'
-        f'<div style="font-size:0.72rem;color:#7a8ea0;margin-top:2px">'
+        f'<div style="font-size:0.72rem;color:#666666;margin-top:2px">'
         f'Easy task \u00b7 50 episodes each</div></div>'
         f'<div style="text-align:right">'
         f'<div style="font-size:2rem;font-weight:800;color:{_GREEN};'
         f'line-height:1">{improvement:.0f}%</div>'
-        f'<div style="font-size:0.65rem;color:#7a8ea0;text-transform:uppercase;'
+        f'<div style="font-size:0.65rem;color:#666666;text-transform:uppercase;'
         f'letter-spacing:0.05em">improvement</div></div></div>'
         f'{_bar("Random Agent (baseline)", random_avg, _RED, "\U0001f3b2")}'
         f'{_bar("Heuristic Agent", heuristic_avg, _GREEN, "\U0001f9e0")}'
         f'{_bar("Trained Policy", trained_avg, _BLUE, "\U0001f916")}'
-        f'<div style="margin-top:16px;padding-top:12px;border-top:1px solid #1e3a5f">'
-        f'<div style="font-size:0.72rem;color:#7a8ea0;text-transform:uppercase;'
+        f'<div style="margin-top:16px;padding-top:12px;border-top:1px solid #404040">'
+        f'<div style="font-size:0.72rem;color:#666666;text-transform:uppercase;'
         f'letter-spacing:0.1em;margin-bottom:4px">Training Reward Curve</div>'
         f'{sparkline}'
         f'<div style="display:flex;justify-content:space-between;font-size:0.65rem;'
-        f'color:#7a8ea0;margin-top:2px">'
+        f'color:#666666;margin-top:2px">'
         f'<span>Episode 1</span><span>Episode {len(training_rewards)}</span></div>'
         f'</div></div>'
     )
