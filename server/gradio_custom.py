@@ -54,9 +54,9 @@ def build_custom_dashboard(
 
     def _wrap(text: str) -> str:
         return (
-            f'<div style="background:#0d2137;border:1px solid #1e3a5f;'
-            f'padding:12px 16px;border-radius:6px;font-family:monospace;'
-            f'font-size:0.82rem;color:#40c4ff;white-space:pre-wrap">'
+            f'<div style="background:#1c1c1c;border:1px solid #404040;'
+            f'padding:12px 16px;border-radius:6px;font-family:\'JetBrains Mono\',monospace;'
+            f'font-size:0.82rem;color:#0668E1;white-space:pre-wrap">'
             f'{text}</div>'
         )
 
@@ -109,14 +109,14 @@ def build_custom_dashboard(
         scorecard = render_scorecard(data) if done else ""
 
         icon = ACTION_ICONS.get(action_type, "\u26a1")
-        color = ACTION_COLORS.get(action_type, "#40c4ff")
+        color = ACTION_COLORS.get(action_type, "#0668E1")
         manual_narration = (
-            f'<div style="background:linear-gradient(135deg,#0d2137,#162332);'
-            f'border:1px solid #1e3a5f;border-radius:10px;padding:16px;margin:12px 0">'
+            f'<div style="background:linear-gradient(135deg,#1c1c1c,#262626);'
+            f'border:1px solid #404040;border-radius:10px;padding:16px;margin:12px 0">'
             f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
-            f'<span style="font-size:0.82rem;color:#7a8ea0;text-transform:uppercase;'
+            f'<span style="font-size:0.82rem;color:#666666;text-transform:uppercase;'
             f'letter-spacing:0.12em;font-weight:600">\U0001f3ae Manual Action</span></div>'
-            f'<div class="cinematic-entry" style="background:#0d1520;'
+            f'<div class="cinematic-entry" style="background:#1c1c1c;'
             f'border:1px solid {color};border-left:3px solid {color};'
             f'border-radius:6px;padding:12px 16px;box-shadow:0 0 15px {color}30">'
             f'<div style="display:flex;justify-content:space-between;align-items:center">'
@@ -126,7 +126,7 @@ def build_custom_dashboard(
             f'STEP {step_counter[0]}</span>'
             f'<span style="color:#e0e6ed;font-weight:600">'
             f'{action_type.replace("_"," ").upper()}</span>'
-            f'<span style="color:#7a8ea0;font-size:0.78rem">\u2192 {target_id}</span>'
+            f'<span style="color:#666666;font-size:0.78rem">\u2192 {target_id}</span>'
             f'</div>'
             f'<span style="color:#ffd740;font-weight:600">${cost:,}</span></div>'
             f'<div style="color:#c8d6e0;font-size:0.82rem;margin-top:8px;'
@@ -260,7 +260,7 @@ def build_custom_dashboard(
         rows = ""
         for label, score in results.items():
             col = (
-                "#00e676" if score >= 0.7
+                "#2B7D6D" if score >= 0.7
                 else ("#ffd740" if score >= 0.5 else "#ff5252")
             )
             bar_w = score * 100
@@ -271,7 +271,7 @@ def build_custom_dashboard(
                 f'<span>{label.split("-")[0].strip()}</span>'
                 f'<span style="color:{col};font-weight:700">{score:.4f}</span>'
                 f'</div>'
-                f'<div style="background:#1e3a5f;height:16px;border-radius:8px;'
+                f'<div style="background:#404040;height:16px;border-radius:8px;'
                 f'overflow:hidden">'
                 f'<div style="background:{col};height:100%;width:{bar_w:.1f}%;'
                 f'border-radius:8px;transition:width 0.5s ease"></div></div>'
@@ -280,16 +280,16 @@ def build_custom_dashboard(
 
         avg = sum(results.values()) / max(len(results), 1)
         avg_col = (
-            "#00e676" if avg >= 0.7
+            "#2B7D6D" if avg >= 0.7
             else ("#ffd740" if avg >= 0.5 else "#ff5252")
         )
 
         comparison = (
-            f'<div style="background:linear-gradient(135deg,#0d2137,#162332);'
+            f'<div style="background:linear-gradient(135deg,#1c1c1c,#262626);'
             f'border:2px solid {avg_col};padding:24px;border-radius:12px;'
-            f'box-shadow:0 0 20px rgba(0,0,0,0.5)">'
+            f'box-shadow:0 0 20px {avg_col}40">'
             f'<div style="text-align:center;margin-bottom:16px">'
-            f'<div style="font-size:0.7rem;color:#7a8ea0;text-transform:uppercase;'
+            f'<div style="font-size:0.7rem;color:#666666;text-transform:uppercase;'
             f'letter-spacing:0.15em">AVERAGE SCORE</div>'
             f'<div style="font-size:3rem;font-weight:800;color:{avg_col};'
             f'text-shadow:0 0 20px {avg_col}40">{avg:.4f}</div></div>'
@@ -305,8 +305,9 @@ def build_custom_dashboard(
 
         with gr.Sidebar(position="left", open=True):
             gr.HTML(
-                '<div style="font-size:1.1rem;font-weight:700;color:#40c4ff;'
-                'margin-bottom:12px">\u2699 Controls</div>'
+                '<div style="font-size:1.1rem;font-weight:700;color:#0668E1;'
+                'margin-bottom:12px;text-shadow:0 0 10px rgba(6,104,225,0.3)">'
+                '\u2699 Controls</div>'
             )
 
             task_selector = gr.Dropdown(
@@ -326,7 +327,7 @@ def build_custom_dashboard(
                 label="Demo Speed (seconds per step)",
             )
 
-            gr.HTML('<hr style="border-color:#1e3a5f;margin:12px 0">')
+            gr.HTML('<hr style="border-color:#404040;margin:12px 0">')
 
             run_all_btn = gr.Button(
                 "\u26a1 Run All Difficulties",
@@ -334,13 +335,13 @@ def build_custom_dashboard(
                 elem_classes="btn-demo-all",
             )
 
-            gr.HTML('<hr style="border-color:#1e3a5f;margin:12px 0">')
+            gr.HTML('<hr style="border-color:#404040;margin:12px 0">')
 
             with gr.Accordion("\U0001f4cb Grading Rubric", open=False):
                 gr.HTML(RUBRIC_HTML)
 
             gr.HTML(
-                '<div style="font-size:0.78rem;color:#7a8ea0;margin-top:8px">'
+                '<div style="font-size:0.78rem;color:#666666;margin-top:8px">'
                 '\U0001f4a1 Use <b>Manual Control</b> panel below the '
                 'shipments to test individual actions.</div>'
             )
@@ -369,12 +370,12 @@ def build_custom_dashboard(
 
             narration_display = gr.HTML(
                 value=(
-                    '<div style="background:linear-gradient(135deg,#0d2137,#162332);'
-                    'border:1px solid #1e3a5f;border-radius:10px;padding:20px;'
-                    'margin:12px 0;text-align:center">'
+                    '<div style="background:linear-gradient(135deg,#1c1c1c,#262626);'
+                    'border:1px solid #404040;border-radius:10px;padding:20px;'
+                    'margin:12px 0;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,0.3)">'
                     '<span style="font-size:1.3rem">\U0001f3ac</span><br>'
-                    '<span style="color:#7a8ea0;font-size:0.85rem">'
-                    'Click <b style="color:#ff9100">\u25b6 Run Agent Demo</b> '
+                    '<span style="color:#666666;font-size:0.85rem">'
+                    'Click <b style="color:#EE4C2C">\u25b6 Run Agent Demo</b> '
                     'in the sidebar to watch the agent solve shipments '
                     'step-by-step</span></div>'
                 ),
@@ -388,14 +389,14 @@ def build_custom_dashboard(
             with gr.Row():
                 with gr.Column(scale=3):
                     gr.HTML(
-                        '<div style="color:#7a8ea0;font-size:0.72rem;'
+                        '<div style="color:#666666;font-size:0.72rem;'
                         'text-transform:uppercase;letter-spacing:0.1em;'
                         'margin-bottom:6px">Shipments</div>'
                     )
                     shipments_display = gr.HTML(
                         value=(
                             '<div style="text-align:center;padding:40px;'
-                            'color:#7a8ea0">'
+                            'color:#666666">'
                             '<div style="font-size:2rem;margin-bottom:8px">'
                             '\U0001f4e6</div>'
                             'Select a difficulty and click '
@@ -406,21 +407,21 @@ def build_custom_dashboard(
 
                 with gr.Column(scale=2):
                     gr.HTML(
-                        '<div style="color:#7a8ea0;font-size:0.72rem;'
+                        '<div style="color:#666666;font-size:0.72rem;'
                         'text-transform:uppercase;letter-spacing:0.1em;'
                         'margin-bottom:6px">Feedback</div>'
                     )
                     feedback_display = gr.HTML(
                         value=(
-                            '<div style="background:#0d2137;border:1px solid '
-                            '#1e3a5f;padding:12px 16px;border-radius:6px;'
-                            'font-family:monospace;font-size:0.82rem;'
-                            'color:#40c4ff">Ready.</div>'
+                            '<div style="background:#1c1c1c;border:1px solid '
+                            '#404040;padding:12px 16px;border-radius:6px;'
+                            'font-family:\'JetBrains Mono\',monospace;font-size:0.82rem;'
+                            'color:#0668E1">Ready.</div>'
                         ),
                     )
 
                     gr.HTML(
-                        '<div style="color:#7a8ea0;font-size:0.72rem;'
+                        '<div style="color:#666666;font-size:0.72rem;'
                         'text-transform:uppercase;letter-spacing:0.1em;'
                         'margin:8px 0 6px 0">Action Log</div>'
                     )
@@ -431,9 +432,9 @@ def build_custom_dashboard(
 
             # ── Manual Control Panel ──
             gr.HTML(
-                '<div style="color:#40c4ff;font-size:0.88rem;font-weight:700;'
+                '<div style="color:#0668E1;font-size:0.88rem;font-weight:700;'
                 'margin-top:20px;margin-bottom:8px;display:flex;'
-                'align-items:center;gap:8px">'
+                'align-items:center;gap:8px;text-shadow:0 0 10px rgba(6,104,225,0.3)">'
                 '<span style="font-size:1.1rem">\U0001f3ae</span>'
                 'MANUAL CONTROL \u2014 Test Individual Actions'
                 '</div>'
@@ -457,11 +458,11 @@ def build_custom_dashboard(
                     )
                     cost_hint = gr.HTML(
                         f'<div style="text-align:center;padding-top:24px">'
-                        f'<div style="font-size:0.72rem;color:#7a8ea0;'
+                        f'<div style="font-size:0.72rem;color:#666666;'
                         f'text-transform:uppercase;letter-spacing:0.05em">'
                         f'Action Cost</div>'
                         f'<div style="font-size:1.6rem;font-weight:700;'
-                        f'color:#ffd740">'
+                        f'color:#ffd740;text-shadow:0 0 8px rgba(255,215,64,0.4)">'
                         f'${int(ACTION_COSTS.get("investigate", 0)):,}'
                         f'</div></div>',
                     )
@@ -470,11 +471,12 @@ def build_custom_dashboard(
                     c = int(ACTION_COSTS.get(at, 0))
                     return (
                         f'<div style="text-align:center;padding-top:24px">'
-                        f'<div style="font-size:0.72rem;color:#7a8ea0;'
+                        f'<div style="font-size:0.72rem;color:#666666;'
                         f'text-transform:uppercase;letter-spacing:0.05em">'
                         f'Action Cost</div>'
                         f'<div style="font-size:1.6rem;font-weight:700;'
-                        f'color:#ffd740">${c:,}</div></div>'
+                        f'color:#ffd740;text-shadow:0 0 8px rgba(255,215,64,0.4)">'
+                        f'${c:,}</div></div>'
                     )
 
                 action_type.change(
@@ -494,7 +496,7 @@ def build_custom_dashboard(
                     )
 
                 gr.HTML(
-                    '<div style="font-size:0.75rem;color:#7a8ea0;'
+                    '<div style="font-size:0.75rem;color:#666666;'
                     'margin-top:8px;line-height:1.5">'
                     '<b style="color:#e0e6ed">How to verify:</b> '
                     'Select a difficulty above \u2192 click '
@@ -502,7 +504,7 @@ def build_custom_dashboard(
                     'choose an action type & target \u2192 click '
                     '<b>\u26a1 Execute</b>. '
                     'Watch the shipment cards update in real-time. '
-                    'Resolution actions: <code style="color:#00e676">'
+                    'Resolution actions: <code style="color:#2B7D6D">'
                     'reroute, reschedule, file_claim, approve_refund, '
                     'split_shipment</code>.</div>'
                 )
