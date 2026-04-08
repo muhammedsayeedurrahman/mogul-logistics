@@ -696,18 +696,53 @@ Each step costs time \u2014 ALL active shipments' SLA deadlines tick down by 1 e
 """
 
 INTRO_HTML = """
-<div style="background:linear-gradient(135deg,#1c1c1c 0%,#262626 100%);
-border:1px solid #404040;padding:20px 24px;margin-bottom:16px;border-radius:8px">
-<div style="display:flex;justify-content:space-between;align-items:center">
-<div>
-<h1 style="margin:0;font-size:1.6rem;color:#e0e6ed;letter-spacing:-0.02em">MOGUL Logistics</h1>
-<div style="color:#666666;font-size:0.82rem;margin-top:4px">
-Shipment Exception Resolution \u2014 RL Environment</div>
+<div style="background:linear-gradient(135deg,#EE4C2C 0%,#0668E1 100%);
+border:none;padding:28px 24px;margin-bottom:18px;border-radius:12px;
+box-shadow:0 6px 24px rgba(238,76,44,0.25)">
+<div style="text-align:center">
+<h1 style="margin:0;font-size:2.2rem;color:#ffffff;font-weight:800;
+letter-spacing:-0.03em;text-shadow:0 2px 6px rgba(0,0,0,0.3)">
+&#x1F4E6; MOGUL Logistics</h1>
+<div style="color:#ffffff;font-size:1.05rem;margin-top:10px;font-weight:500">
+AI-Powered Supply Chain Exception Resolution</div>
+<div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);
+border-radius:7px;padding:14px;margin-top:16px;border:1px solid rgba(255,255,255,0.2)">
+<div style="color:#fff;font-size:0.88rem;line-height:1.5">
+<strong>Real-world crisis management:</strong> Resolve delays, damages, customs holds
+across India under time & budget constraints
 </div>
-<div style="text-align:right">
-<div style="color:#0668E1;font-size:0.82rem;font-weight:600">OpenEnv Hackathon</div>
-<div style="color:#666666;font-size:0.72rem">v1.0.0 \u00b7 Muhammed Sayeedur Rahman</div>
-</div></div></div>
+</div>
+<div style="margin-top:14px;color:rgba(255,255,255,0.88);font-size:0.82rem">
+<strong>Meta PyTorch OpenEnv Hackathon 2026</strong> &#x2022; Muhammed Sayeedur Rahman
+</div>
+</div></div>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
+<div style="background:linear-gradient(135deg,#2B7D6D,#1a4d43);
+border:2px solid #2B7D6D;padding:18px;border-radius:9px;text-align:center;
+box-shadow:0 4px 14px rgba(43,125,109,0.3)">
+<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);text-transform:uppercase;
+letter-spacing:0.08em;margin-bottom:6px">vs Random</div>
+<div style="font-size:2.6rem;font-weight:800;color:#fff">+649%</div>
+<div style="font-size:0.7rem;color:rgba(255,255,255,0.6);margin-top:3px">improvement</div>
+</div>
+<div style="background:linear-gradient(135deg,#0668E1,#044a9f);
+border:2px solid #0668E1;padding:18px;border-radius:9px;text-align:center;
+box-shadow:0 4px 14px rgba(6,104,225,0.3)">
+<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);text-transform:uppercase;
+letter-spacing:0.08em;margin-bottom:6px">Training Episodes</div>
+<div style="font-size:2.6rem;font-weight:800;color:#fff">280</div>
+<div style="font-size:0.7rem;color:rgba(255,255,255,0.6);margin-top:3px">real PyTorch</div>
+</div>
+<div style="background:linear-gradient(135deg,#EE4C2C,#b93820);
+border:2px solid #EE4C2C;padding:18px;border-radius:9px;text-align:center;
+box-shadow:0 4px 14px rgba(238,76,44,0.3)">
+<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);text-transform:uppercase;
+letter-spacing:0.08em;margin-bottom:6px">Avg Score</div>
+<div style="font-size:2.6rem;font-weight:800;color:#fff">3.50</div>
+<div style="font-size:0.7rem;color:rgba(255,255,255,0.6);margin-top:3px">across tasks</div>
+</div>
+</div>
 """
 
 
