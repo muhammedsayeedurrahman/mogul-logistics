@@ -521,6 +521,86 @@ def build_custom_dashboard(
                         elem_classes="manual-reset-btn", scale=1,
                     )
 
+                # Validation message for shipment/difficulty mismatch
+                validation_msg = gr.HTML(value="", visible=True)
+
+                def _validate_shipment_difficulty(ship_id, task_label):
+                    """Check if selected shipment exists in current difficulty."""
+                    # Extract ship number from SHP-XXX format
+                    ship_num = int(ship_id.split("-")[1])
+
+                    # Map task labels to max shipments
+                    task_max_ships = {
+                        "Easy  -  1 ship, 5 steps, $5K": 1,
+                        "Medium  -  4 ships, 10 steps, $12K": 4,
+                        "Hard  -  8 ships, 15 steps, $15K": 8,
+                    }
+
+                    max_ships = task_max_ships.get(task_label, 1)
+
+                    if ship_num > max_ships:
+                        # Suggest correct difficulty
+                        if ship_num <= 1:
+                            suggested = "Easy"
+                        elif ship_num <= 4:
+                            suggested = "Medium"
+                        else:
+                            suggested = "Hard"
+
+                        return (
+                            f'<div style="background:linear-gradient(135deg,#2a1a0a,#3a1a0a);'
+                            f'border:2px solid #EE4C2C;border-left:5px solid #ffd740;'
+                            f'border-radius:10px;padding:16px;margin:12px 0;'
+                            f'animation:pulse 2s infinite">'
+                            f'<div style="display:flex;align-items:center;gap:12px">'
+                            f'<span style="font-size:2rem">⚠️</span>'
+                            f'<div style="flex:1">'
+                            f'<div style="color:#EE4C2C;font-weight:700;font-size:1.1rem;'
+                            f'margin-bottom:6px">Shipment Not Available in Current Difficulty</div>'
+                            f'<div style="color:#c8d6e0;font-size:0.9rem;line-height:1.6">'
+                            f'<strong style="color:#ffd740">{ship_id}</strong> does not exist '
+                            f'in <strong>{task_label.split("-")[0].strip()}</strong> difficulty.<br>'
+                            f'<strong>{task_label.split("-")[0].strip()}</strong> has only '
+                            f'<strong style="color:#2B7D6D">{max_ships} shipment(s)</strong> '
+                            f'(SHP-001 to SHP-{max_ships:03d}).'
+                            f'</div></div></div>'
+                            f'<div style="background:#1a0a0a;padding:12px;border-radius:6px;'
+                            f'margin-top:12px;border-left:3px solid #ffd740">'
+                            f'<div style="color:#ffd740;font-weight:700;font-size:0.85rem;'
+                            f'margin-bottom:6px">💡 SOLUTION</div>'
+                            f'<div style="color:#c8d6e0;font-size:0.88rem">'
+                            f'1. Change difficulty to <strong style="color:#2B7D6D">'
+                            f'{suggested}</strong> or higher above<br>'
+                            f'2. Click <strong>🔄 Reset Episode</strong><br>'
+                            f'3. Then execute your action on {ship_id}'
+                            f'</div></div></div>'
+                        )
+                    else:
+                        # Valid selection - show success message
+                        return (
+                            f'<div style="background:linear-gradient(135deg,#0a2622,#0a1a15);'
+                            f'border:1px solid #2B7D6D;border-radius:8px;padding:12px;'
+                            f'margin:12px 0">'
+                            f'<div style="display:flex;align-items:center;gap:10px">'
+                            f'<span style="font-size:1.5rem">✅</span>'
+                            f'<div style="color:#2B7D6D;font-weight:600;font-size:0.9rem">'
+                            f'<strong style="color:#ffd740">{ship_id}</strong> is available in '
+                            f'<strong>{task_label.split("-")[0].strip()}</strong> difficulty. '
+                            f'Ready to execute!</div></div></div>'
+                        )
+
+                # Wire validation to both dropdowns
+                target_id.change(
+                    fn=_validate_shipment_difficulty,
+                    inputs=[target_id, task_selector],
+                    outputs=[validation_msg],
+                )
+                task_selector.change(
+                    fn=_validate_shipment_difficulty,
+                    inputs=[target_id, task_selector],
+                    outputs=[validation_msg],
+                )
+
                 gr.HTML(
                     '<div style="font-size:0.75rem;color:#666666;'
                     'margin-top:8px;line-height:1.5">'
@@ -653,5 +733,12 @@ def build_custom_dashboard(
         )
 
         dashboard.load(fn=None, js=AUTO_SWITCH_JS)
+
+        # Initialize validation message on load
+        dashboard.load(
+            fn=_validate_shipment_difficulty,
+            inputs=[target_id, task_selector],
+            outputs=[validation_msg],
+        )
 
     return dashboard
