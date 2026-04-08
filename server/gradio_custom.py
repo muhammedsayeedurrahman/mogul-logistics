@@ -373,24 +373,6 @@ def build_custom_dashboard(
             )
 
         with gr.Column(elem_classes="mogul-root"):
-            # EMERGENCY TEST: Big red box at VERY TOP of page
-            gr.HTML(
-                '<div style="background:#ff0000;border:10px solid #ffff00;'
-                'border-radius:20px;padding:50px;margin:30px 0;text-align:center;'
-                'position:relative;z-index:9999">'
-                '<div style="color:#ffffff;font-weight:900;font-size:3rem;'
-                'text-shadow:2px 2px 4px #000">'
-                '🚨🚨🚨 EMERGENCY TEST MESSAGE 🚨🚨🚨</div>'
-                '<div style="color:#ffff00;font-weight:700;font-size:2rem;'
-                'margin-top:20px;text-shadow:2px 2px 4px #000">'
-                'IF YOU CAN SEE THIS, HTML IS RENDERING!</div>'
-                '<div style="color:#ffffff;font-size:1.5rem;margin-top:20px">'
-                'This is at the VERY TOP of the main content area.</div>'
-                '<div style="color:#ffffff;font-size:1.5rem">'
-                'If you see this, Gradio HTML components work.</div>'
-                '</div>'
-            )
-
             gr.HTML(INTRO_HTML)
             gr.HTML(HOW_IT_WORKS_HTML)
 
@@ -483,14 +465,6 @@ def build_custom_dashboard(
                 'MANUAL CONTROL \u2014 Test Individual Actions'
                 '</div>'
             )
-
-            # Validation message - MOVED TO TOP so always visible!
-            validation_msg = gr.HTML(
-                value='<div style="background:#ff0000;border:5px solid #ffff00;border-radius:10px;padding:30px;margin:20px 0;text-align:center"><div style="color:#ffffff;font-weight:900;font-size:2rem">🚨 VALIDATION MESSAGE AREA 🚨</div><div style="color:#ffff00;font-weight:700;font-size:1.2rem;margin-top:10px">This box will show warnings when you select invalid shipments</div><div style="color:#ffffff;font-size:1rem;margin-top:10px">Try selecting SHP-003 on Easy difficulty!</div></div>',
-                visible=True,
-                elem_id="shipment-validation-msg"
-            )
-
             with gr.Group(elem_classes="manual-panel"):
                 with gr.Row():
                     action_type = gr.Dropdown(
@@ -546,103 +520,6 @@ def build_custom_dashboard(
                         "\U0001f504 Reset Episode", variant="secondary",
                         elem_classes="manual-reset-btn", scale=1,
                     )
-
-                def _validate_shipment_difficulty(ship_id, task_label):
-                    """Check if selected shipment exists in current difficulty."""
-                    # Debug logging (appears in server console)
-                    print(f"[VALIDATION] ship_id={ship_id}, task_label={task_label}")
-
-                    # Extract ship number from SHP-XXX format
-                    ship_num = int(ship_id.split("-")[1])
-                    print(f"[VALIDATION] ship_num={ship_num}")
-
-                    # Map task labels to max shipments
-                    task_max_ships = {
-                        "Easy  -  1 ship, 5 steps, $5K": 1,
-                        "Medium  -  4 ships, 10 steps, $12K": 4,
-                        "Hard  -  8 ships, 15 steps, $15K": 8,
-                    }
-
-                    max_ships = task_max_ships.get(task_label, 1)
-                    print(f"[VALIDATION] max_ships={max_ships}, ship_num > max_ships = {ship_num > max_ships}")
-
-                    # TEMPORARY TEST: Always show a big red box to verify component is visible
-                    return (
-                        f'<div style="background:#ff0000;border:5px solid #ffff00;'
-                        f'border-radius:10px;padding:30px;margin:20px 0;text-align:center">'
-                        f'<div style="color:#ffffff;font-weight:900;font-size:2rem">'
-                        f'🚨 TEST MESSAGE - VALIDATION IS WORKING! 🚨</div>'
-                        f'<div style="color:#ffff00;font-weight:700;font-size:1.2rem;margin-top:10px">'
-                        f'If you can see this, the validation component is working!</div>'
-                        f'<div style="color:#ffffff;font-size:1rem;margin-top:10px">'
-                        f'Selected: {ship_id} on {task_label}</div>'
-                        f'<div style="color:#ffffff;font-size:1rem">'
-                        f'Ship num: {ship_num}, Max ships: {max_ships}</div>'
-                        f'</div>'
-                    )
-
-                    if ship_num > max_ships:
-                        # Suggest correct difficulty
-                        if ship_num <= 1:
-                            suggested = "Easy"
-                        elif ship_num <= 4:
-                            suggested = "Medium"
-                        else:
-                            suggested = "Hard"
-
-                        return (
-                            f'<div style="background:linear-gradient(135deg,#2a1a0a,#3a1a0a);'
-                            f'border:2px solid #EE4C2C;border-left:5px solid #ffd740;'
-                            f'border-radius:10px;padding:16px;margin:12px 0;'
-                            f'animation:pulse 2s infinite">'
-                            f'<div style="display:flex;align-items:center;gap:12px">'
-                            f'<span style="font-size:2rem">⚠️</span>'
-                            f'<div style="flex:1">'
-                            f'<div style="color:#EE4C2C;font-weight:700;font-size:1.1rem;'
-                            f'margin-bottom:6px">Shipment Not Available in Current Difficulty</div>'
-                            f'<div style="color:#c8d6e0;font-size:0.9rem;line-height:1.6">'
-                            f'<strong style="color:#ffd740">{ship_id}</strong> does not exist '
-                            f'in <strong>{task_label.split("-")[0].strip()}</strong> difficulty.<br>'
-                            f'<strong>{task_label.split("-")[0].strip()}</strong> has only '
-                            f'<strong style="color:#2B7D6D">{max_ships} shipment(s)</strong> '
-                            f'(SHP-001 to SHP-{max_ships:03d}).'
-                            f'</div></div></div>'
-                            f'<div style="background:#1a0a0a;padding:12px;border-radius:6px;'
-                            f'margin-top:12px;border-left:3px solid #ffd740">'
-                            f'<div style="color:#ffd740;font-weight:700;font-size:0.85rem;'
-                            f'margin-bottom:6px">💡 SOLUTION</div>'
-                            f'<div style="color:#c8d6e0;font-size:0.88rem">'
-                            f'1. Change difficulty to <strong style="color:#2B7D6D">'
-                            f'{suggested}</strong> or higher above<br>'
-                            f'2. Click <strong>🔄 Reset Episode</strong><br>'
-                            f'3. Then execute your action on {ship_id}'
-                            f'</div></div></div>'
-                        )
-                    else:
-                        # Valid selection - show success message
-                        return (
-                            f'<div style="background:linear-gradient(135deg,#0a2622,#0a1a15);'
-                            f'border:1px solid #2B7D6D;border-radius:8px;padding:12px;'
-                            f'margin:12px 0">'
-                            f'<div style="display:flex;align-items:center;gap:10px">'
-                            f'<span style="font-size:1.5rem">✅</span>'
-                            f'<div style="color:#2B7D6D;font-weight:600;font-size:0.9rem">'
-                            f'<strong style="color:#ffd740">{ship_id}</strong> is available in '
-                            f'<strong>{task_label.split("-")[0].strip()}</strong> difficulty. '
-                            f'Ready to execute!</div></div></div>'
-                        )
-
-                # Wire validation to both dropdowns
-                target_id.change(
-                    fn=_validate_shipment_difficulty,
-                    inputs=[target_id, task_selector],
-                    outputs=[validation_msg],
-                )
-                task_selector.change(
-                    fn=_validate_shipment_difficulty,
-                    inputs=[target_id, task_selector],
-                    outputs=[validation_msg],
-                )
 
                 gr.HTML(
                     '<div style="font-size:0.75rem;color:#666666;'
