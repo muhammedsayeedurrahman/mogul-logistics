@@ -31,6 +31,216 @@ from .gradio_styles import (
 from .heuristic import HeuristicPlanner
 from .route_map import render_route_map
 from .training_viz import render_training_results
+from .multi_agent import negotiation_engine
+from .constraints_viz import render_all_constraints
+from .explainable_ai import explainable_ai
+
+
+def render_negotiation_panel(negotiation_data: Dict[str, Any]) -> str:
+    """Render multi-agent negotiation visualization."""
+    if not negotiation_data:
+        return """
+        <div style="text-align:center;padding:40px;color:#666;">
+            <div style="font-size:2rem;margin-bottom:8px">🤝</div>
+            <div>No negotiation data yet. Execute an action to see multi-agent proposals.</div>
+        </div>
+        """
+
+    proposals = negotiation_data.get("proposals", [])
+    consensus = negotiation_data.get("consensus", {})
+    disagreement = negotiation_data.get("disagreement_level", 0)
+
+    # Header
+    html = """
+    <div style="background:linear-gradient(135deg,rgba(238,76,44,0.05),rgba(238,76,44,0.1));
+    border-radius:16px;padding:20px;">
+        <div style="font-size:18px;font-weight:700;color:#EE4C2C;margin-bottom:16px;">
+            🤝 Multi-Agent Negotiation
+        </div>
+    """
+
+    # Consensus result
+    winner = consensus.get("winner", "Unknown")
+    winner_action = consensus.get("action", "unknown")
+    winner_score = consensus.get("score", 0)
+
+    html += f"""
+    <div style="background:rgba(76,175,80,0.1);border:2px solid #4CAF50;
+    border-radius:12px;padding:16px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <span style="font-size:24px;">🏆</span>
+            <div>
+                <div style="color:#4CAF50;font-weight:600;font-size:14px;">CONSENSUS REACHED</div>
+                <div style="color:#fff;font-size:12px;margin-top:4px;">
+                    {winner} won with <strong>{winner_action}</strong> (score: {winner_score:.3f})
+                </div>
+            </div>
+        </div>
+        <div style="background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-size:11px;color:#c8d6e0;line-height:1.6;">
+            💡 {consensus.get("reasoning", "No reasoning provided")}
+        </div>
+    </div>
+    """
+
+    # Disagreement meter
+    disagreement_color = "#4CAF50" if disagreement < 0.3 else "#FF9800" if disagreement < 0.6 else "#f44336"
+    html += f"""
+    <div style="margin-bottom:16px;">
+        <div style="font-size:12px;color:#999;margin-bottom:6px;">Disagreement Level</div>
+        <div style="background:rgba(255,255,255,0.1);height:20px;border-radius:10px;overflow:hidden;">
+            <div style="background:{disagreement_color};height:100%;width:{disagreement*100:.0f}%;
+            transition:width 0.5s ease;"></div>
+        </div>
+        <div style="font-size:10px;color:{disagreement_color};margin-top:4px;">
+            {disagreement:.3f} ({"Low" if disagreement < 0.3 else "Moderate" if disagreement < 0.6 else "High"})
+        </div>
+    </div>
+    """
+
+    # Agent proposals
+    html += '<div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:12px;">Agent Proposals</div>'
+
+    for prop in proposals:
+        agent_name = prop.get("agent", "Unknown")
+        action = prop.get("action", "unknown")
+        score = prop.get("score", 0)
+        reasoning = prop.get("reasoning", "")
+        trade_offs = prop.get("trade_offs", {})
+
+        is_winner = (agent_name == winner)
+        border_color = "#4CAF50" if is_winner else "#404040"
+        badge = "🏆 SELECTED" if is_winner else ""
+
+        html += f"""
+        <div style="background:rgba(0,0,0,0.3);border:1px solid {border_color};
+        border-left:3px solid {border_color};border-radius:10px;padding:14px;margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <div style="font-size:13px;font-weight:600;color:#fff;">{agent_name}</div>
+                <div style="font-size:10px;color:{border_color};font-weight:600;">{badge}</div>
+            </div>
+            <div style="font-size:11px;color:#999;margin-bottom:8px;">
+                Action: <strong style="color:#EE4C2C;">{action}</strong> | Score: {score:.3f}
+            </div>
+            <div style="background:rgba(0,0,0,0.5);padding:8px;border-radius:6px;font-size:10px;
+            color:#c8d6e0;margin-bottom:8px;">{reasoning}</div>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:10px;">
+        """
+
+        for key, val in trade_offs.items():
+            bar_width = val * 100
+            html += f"""
+                <div>
+                    <div style="color:#999;margin-bottom:2px;">{key.replace("_"," ").title()}</div>
+                    <div style="background:rgba(255,255,255,0.1);height:6px;border-radius:3px;overflow:hidden;">
+                        <div style="background:#EE4C2C;height:100%;width:{bar_width:.0f}%;"></div>
+                    </div>
+                </div>
+            """
+
+        html += "</div></div>"
+
+    html += "</div>"
+    return html
+
+
+def render_explanation_panel(explanation_data: Dict[str, Any]) -> str:
+    """Render explainable AI panel."""
+    if not explanation_data:
+        return """
+        <div style="text-align:center;padding:40px;color:#666;">
+            <div style="font-size:2rem;margin-bottom:8px;">🧠</div>
+            <div>No explanation data yet. Execute an action to see AI reasoning.</div>
+        </div>
+        """
+
+    action_type = explanation_data.get("action_type", "unknown")
+    confidence = explanation_data.get("confidence", 0)
+    reasoning_chain = explanation_data.get("reasoning_chain", [])
+    alternatives = explanation_data.get("alternatives", [])
+    trade_offs = explanation_data.get("trade_offs", {})
+    decision_factors = explanation_data.get("decision_factors", [])
+    counterfactual = explanation_data.get("counterfactual", "")
+
+    # Confidence color
+    conf_color = "#4CAF50" if confidence > 0.8 else "#FF9800" if confidence > 0.6 else "#f44336"
+
+    html = f"""
+    <div style="background:linear-gradient(135deg,rgba(6,104,225,0.05),rgba(6,104,225,0.1));
+    border-radius:16px;padding:20px;">
+        <div style="font-size:18px;font-weight:700;color:#0668E1;margin-bottom:16px;">
+            🧠 Explainable AI
+        </div>
+
+        <!-- Confidence -->
+        <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:16px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <span style="font-size:14px;font-weight:600;color:#fff;">Decision Confidence</span>
+                <span style="color:{conf_color};font-weight:700;font-size:16px;">{confidence:.1%}</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.1);height:16px;border-radius:8px;overflow:hidden;">
+                <div style="background:{conf_color};height:100%;width:{confidence*100:.0f}%;
+                transition:width 0.5s ease;"></div>
+            </div>
+        </div>
+
+        <!-- Reasoning Chain -->
+        <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:16px;margin-bottom:16px;">
+            <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:12px;">Reasoning Chain</div>
+    """
+
+    for i, step in enumerate(reasoning_chain, 1):
+        html += f"""
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+            <div style="background:#0668E1;color:#fff;width:24px;height:24px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;
+            flex-shrink:0;">{i}</div>
+            <div style="flex:1;font-size:12px;color:#c8d6e0;line-height:1.6;padding-top:2px;">{step}</div>
+        </div>
+        """
+
+    html += """
+        </div>
+
+        <!-- Decision Factors -->
+        <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:16px;margin-bottom:16px;">
+            <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:12px;">Key Decision Factors</div>
+    """
+
+    for factor_name, weight, impact in decision_factors:
+        bar_width = weight * 100
+        html += f"""
+        <div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <span style="font-size:12px;color:#fff;">{factor_name}</span>
+                <span style="font-size:11px;color:#999;">Weight: {weight:.0%}</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.1);height:10px;border-radius:5px;overflow:hidden;
+            margin-bottom:4px;">
+                <div style="background:#EE4C2C;height:100%;width:{bar_width:.0f}%;"></div>
+            </div>
+            <div style="font-size:10px;color:#999;font-style:italic;">{impact}</div>
+        </div>
+        """
+
+    html += """
+        </div>
+
+        <!-- Counterfactual -->
+    """
+
+    if counterfactual:
+        html += f"""
+        <div style="background:rgba(255,152,0,0.1);border-left:3px solid #FF9800;
+        border-radius:8px;padding:12px;margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;color:#FF9800;margin-bottom:6px;">
+                🔀 What If? (Counterfactual)
+            </div>
+            <div style="font-size:11px;color:#c8d6e0;line-height:1.6;">{counterfactual}</div>
+        </div>
+        """
+
+    html += "</div>"
+    return html
 
 
 def build_custom_dashboard(
@@ -46,6 +256,8 @@ def build_custom_dashboard(
     action_log_entries: list[str] = []
     step_counter: list[int] = [0]
     reward_history: list[dict] = []
+    initial_budget: list[float] = [5000]
+    initial_time: list[int] = [20]
 
     # ── Core handlers ───────────────────────────────────────────────
 
@@ -69,6 +281,14 @@ def build_custom_dashboard(
             reset_kwargs={"task_id": tid},
         )
         obs = data.get("observation", {})
+
+        # Capture initial values for constraint tracking
+        initial_budget[0] = obs.get("budget_remaining", 5000)
+        initial_time[0] = obs.get("time_remaining", 20)
+
+        # Render constraints
+        constraints_html = render_all_constraints(obs, initial_budget[0], initial_time[0])
+
         return (
             render_shipments(obs),
             *render_stats(obs),
@@ -78,6 +298,9 @@ def build_custom_dashboard(
             "",
             "",
             render_route_map(obs),
+            constraints_html,
+            "",  # negotiation_display
+            "",  # explanation_display
         )
 
     async def do_step(action_type, target_id, params_str):
@@ -88,6 +311,7 @@ def build_custom_dashboard(
             except json.JSONDecodeError:
                 pass
 
+        # Execute the action
         data = await web_manager.step_environment({
             "action_type": action_type,
             "target_shipment_id": target_id,
@@ -107,6 +331,55 @@ def build_custom_dashboard(
         action_log_entries.append(entry)
 
         scorecard = render_scorecard(data) if done else ""
+
+        # Generate multi-agent negotiation data (simulated for manual actions)
+        shipments = obs.get("shipments", [])
+        target_shipment = next((s for s in shipments if s["tracking_id"] == target_id), None)
+
+        negotiation_data = {}
+        explanation_data = {}
+
+        if target_shipment:
+            from models import ShipmentAction
+
+            # Multi-agent negotiation
+            action_obj = ShipmentAction(
+                action_type=action_type,
+                target_shipment_id=target_id,
+                parameters=params
+            )
+            _, neg_metadata = negotiation_engine.negotiate_action(
+                target_shipment,
+                {"budget_remaining": obs.get("budget_remaining", 0),
+                 "time_remaining": obs.get("time_remaining", 0)}
+            )
+            negotiation_data = neg_metadata
+
+            # Explainable AI
+            explanation = explainable_ai.explain_action(
+                action_obj,
+                target_shipment,
+                {"budget_remaining": obs.get("budget_remaining", 0),
+                 "time_remaining": obs.get("time_remaining", 0)},
+                neg_metadata
+            )
+            explanation_data = {
+                "action_type": action_type,
+                "confidence": explanation.confidence,
+                "reasoning_chain": explanation.reasoning_chain,
+                "alternatives": [
+                    {"action": a.action_type, "score": a.score, "pros": a.pros, "cons": a.cons}
+                    for a in explanation.alternatives
+                ],
+                "trade_offs": explanation.trade_offs,
+                "decision_factors": explanation.decision_factors,
+                "counterfactual": explanation.counterfactual,
+            }
+
+        # Render visualizations
+        constraints_html = render_all_constraints(obs, initial_budget[0], initial_time[0])
+        negotiation_html = render_negotiation_panel(negotiation_data)
+        explanation_html = render_explanation_panel(explanation_data)
 
         icon = ACTION_ICONS.get(action_type, "\u26a1")
         color = ACTION_COLORS.get(action_type, "#0668E1")
@@ -156,6 +429,9 @@ def build_custom_dashboard(
             scorecard,
             manual_narration,
             render_route_map(obs),
+            constraints_html,
+            negotiation_html,
+            explanation_html,
         )
 
     async def do_auto_run(task_label, speed):
@@ -171,6 +447,10 @@ def build_custom_dashboard(
             reset_kwargs={"task_id": tid},
         )
         obs = data.get("observation", {})
+
+        # Capture initial values
+        initial_budget[0] = obs.get("budget_remaining", 5000)
+        initial_time[0] = obs.get("time_remaining", 20)
 
         cinematic_events.append({
             "step": 0, "action": "reset", "target": tid,
@@ -190,6 +470,9 @@ def build_custom_dashboard(
             "",
             render_cinematic_feed(cinematic_events, is_live=True),
             render_route_map(obs),
+            render_all_constraints(obs, initial_budget[0], initial_time[0]),
+            "",  # negotiation_display
+            "",  # explanation_display
         )
 
         done = data.get("done", False)
@@ -230,6 +513,50 @@ def build_custom_dashboard(
                 "done": done,
             })
 
+            # Generate multi-agent and explanation data
+            shipments = obs.get("shipments", [])
+            target_shipment = next((s for s in shipments if s["tracking_id"] == action["target_shipment_id"]), None)
+
+            negotiation_data = {}
+            explanation_data = {}
+
+            if target_shipment:
+                from models import ShipmentAction
+
+                # Multi-agent negotiation
+                action_obj = ShipmentAction(
+                    action_type=action["action_type"],
+                    target_shipment_id=action["target_shipment_id"],
+                    parameters=action.get("parameters", {})
+                )
+                _, neg_metadata = negotiation_engine.negotiate_action(
+                    target_shipment,
+                    {"budget_remaining": obs.get("budget_remaining", 0),
+                     "time_remaining": obs.get("time_remaining", 0)}
+                )
+                negotiation_data = neg_metadata
+
+                # Explainable AI
+                expl = explainable_ai.explain_action(
+                    action_obj,
+                    target_shipment,
+                    {"budget_remaining": obs.get("budget_remaining", 0),
+                     "time_remaining": obs.get("time_remaining", 0)},
+                    neg_metadata
+                )
+                explanation_data = {
+                    "action_type": action["action_type"],
+                    "confidence": expl.confidence,
+                    "reasoning_chain": expl.reasoning_chain,
+                    "alternatives": [
+                        {"action": a.action_type, "score": a.score, "pros": a.pros, "cons": a.cons}
+                        for a in expl.alternatives
+                    ],
+                    "trade_offs": expl.trade_offs,
+                    "decision_factors": expl.decision_factors,
+                    "counterfactual": expl.counterfactual,
+                }
+
             yield (
                 render_shipments(obs),
                 *render_stats(obs),
@@ -239,6 +566,9 @@ def build_custom_dashboard(
                 scorecard,
                 render_cinematic_feed(cinematic_events, is_live=not done),
                 render_route_map(obs),
+                render_all_constraints(obs, initial_budget[0], initial_time[0]),
+                render_negotiation_panel(negotiation_data),
+                render_explanation_panel(explanation_data),
             )
 
     async def do_run_all(speed):
@@ -410,6 +740,36 @@ def build_custom_dashboard(
             with gr.Accordion("\U0001f5fa Route Map \u2014 Indian Logistics Network", open=True):
                 route_map_display = gr.HTML(
                     value=render_route_map(),
+                )
+
+            with gr.Accordion("📊 Live Constraint Monitor — Real-Time Optimization Limits", open=True):
+                constraints_display = gr.HTML(
+                    value="""
+                    <div style="text-align:center;padding:40px;color:#666;">
+                        <div style="font-size:2rem;margin-bottom:8px;">📊</div>
+                        <div>Reset an episode to see live constraint visualization</div>
+                    </div>
+                    """
+                )
+
+            with gr.Accordion("🤝 Multi-Agent Negotiation — Collaborative Decision Making", open=False):
+                negotiation_display = gr.HTML(
+                    value="""
+                    <div style="text-align:center;padding:40px;color:#666;">
+                        <div style="font-size:2rem;margin-bottom:8px;">🤝</div>
+                        <div>Execute an action to see multi-agent proposals and consensus</div>
+                    </div>
+                    """
+                )
+
+            with gr.Accordion("🧠 Explainable AI — Decision Reasoning & Alternatives", open=False):
+                explanation_display = gr.HTML(
+                    value="""
+                    <div style="text-align:center;padding:40px;color:#666;">
+                        <div style="font-size:2rem;margin-bottom:8px;">🧠</div>
+                        <div>Execute an action to see why the AI chose it and what alternatives were considered</div>
+                    </div>
+                    """
                 )
 
             with gr.Row():
@@ -621,6 +981,9 @@ def build_custom_dashboard(
             scorecard_display,
             narration_display,
             route_map_display,
+            constraints_display,
+            negotiation_display,
+            explanation_display,
         ]
 
         async def reset_wrap(task_label):
