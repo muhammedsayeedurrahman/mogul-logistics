@@ -465,6 +465,14 @@ def build_custom_dashboard(
                 'MANUAL CONTROL \u2014 Test Individual Actions'
                 '</div>'
             )
+
+            # Validation message - MOVED TO TOP so always visible!
+            validation_msg = gr.HTML(
+                value='<div style="background:#ff0000;border:5px solid #ffff00;border-radius:10px;padding:30px;margin:20px 0;text-align:center"><div style="color:#ffffff;font-weight:900;font-size:2rem">🚨 VALIDATION MESSAGE AREA 🚨</div><div style="color:#ffff00;font-weight:700;font-size:1.2rem;margin-top:10px">This box will show warnings when you select invalid shipments</div><div style="color:#ffffff;font-size:1rem;margin-top:10px">Try selecting SHP-003 on Easy difficulty!</div></div>',
+                visible=True,
+                elem_id="shipment-validation-msg"
+            )
+
             with gr.Group(elem_classes="manual-panel"):
                 with gr.Row():
                     action_type = gr.Dropdown(
@@ -521,13 +529,6 @@ def build_custom_dashboard(
                         elem_classes="manual-reset-btn", scale=1,
                     )
 
-                # Validation message for shipment/difficulty mismatch
-                validation_msg = gr.HTML(
-                    value='<div style="padding:12px;color:#666;text-align:center;font-size:0.85rem">Select a shipment to see validation</div>',
-                    visible=True,
-                    elem_id="shipment-validation-msg"
-                )
-
                 def _validate_shipment_difficulty(ship_id, task_label):
                     """Check if selected shipment exists in current difficulty."""
                     # Debug logging (appears in server console)
@@ -546,6 +547,21 @@ def build_custom_dashboard(
 
                     max_ships = task_max_ships.get(task_label, 1)
                     print(f"[VALIDATION] max_ships={max_ships}, ship_num > max_ships = {ship_num > max_ships}")
+
+                    # TEMPORARY TEST: Always show a big red box to verify component is visible
+                    return (
+                        f'<div style="background:#ff0000;border:5px solid #ffff00;'
+                        f'border-radius:10px;padding:30px;margin:20px 0;text-align:center">'
+                        f'<div style="color:#ffffff;font-weight:900;font-size:2rem">'
+                        f'🚨 TEST MESSAGE - VALIDATION IS WORKING! 🚨</div>'
+                        f'<div style="color:#ffff00;font-weight:700;font-size:1.2rem;margin-top:10px">'
+                        f'If you can see this, the validation component is working!</div>'
+                        f'<div style="color:#ffffff;font-size:1rem;margin-top:10px">'
+                        f'Selected: {ship_id} on {task_label}</div>'
+                        f'<div style="color:#ffffff;font-size:1rem">'
+                        f'Ship num: {ship_num}, Max ships: {max_ships}</div>'
+                        f'</div>'
+                    )
 
                     if ship_num > max_ships:
                         # Suggest correct difficulty
