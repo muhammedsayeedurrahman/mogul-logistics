@@ -26,11 +26,14 @@ class PolicyNetwork(nn.Module):
 
 
 def encode_obs(obs: dict) -> torch.Tensor:
-    """Encode observation to vector."""
+    """Encode observation to vector (always 20 features)."""
     features = []
+
+    # Global features (2)
     features.append(obs.get("budget_remaining", 0) / 15000)
     features.append(obs.get("time_remaining", 0) / 20)
 
+    # Shipment features (2 per shipment, max 8 shipments = 16)
     shipments = obs.get("shipments", [])
     for i in range(8):
         if i < len(shipments):
@@ -40,7 +43,13 @@ def encode_obs(obs: dict) -> torch.Tensor:
         else:
             features.extend([0.0, 0.0])
 
-    return torch.tensor(features[:20], dtype=torch.float32)
+    # Aggregate features (2)
+    features.append(len(shipments) / 8.0)  # Number of shipments normalized
+    features.append(obs.get("step_count", 0) / 20.0)  # Progress normalized
+
+    # Ensure exactly 20 features
+    assert len(features) == 20, f"Expected 20 features, got {len(features)}"
+    return torch.tensor(features, dtype=torch.float32)
 
 
 async def train(base_url="http://localhost:8000", episodes=500):
@@ -158,6 +167,6 @@ async def train(base_url="http://localhost:8000", episodes=500):
 
 
 if __name__ == "__main__":
-    print("\n⚠️  Make sure the server is running: python -m uvicorn server.app:app --port 8000\n")
+    print("\n[INFO] Make sure the server is running: python -m uvicorn server.app:app --port 8000\n")
     time.sleep(2)
     asyncio.run(train())
