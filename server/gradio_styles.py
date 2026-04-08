@@ -382,6 +382,27 @@ html { scroll-behavior: smooth !important; }
   border-radius: 50% !important; font-weight: 900 !important; font-size: 1.6rem !important;
   border: 3px solid currentColor !important;
 }
+
+/* ── Layout stability (prevent frame shift on update) ──── */
+.mogul-root .gr-group,
+.mogul-root .gr-box,
+.mogul-root .gr-panel {
+  transition: none !important;
+}
+/* Lock output container heights so they don't collapse/expand */
+.mogul-root .gr-html-output {
+  min-height: 60px !important;
+}
+.ship-grid {
+  min-height: 120px !important;
+}
+/* Prevent Gradio's default layout recalculation flicker */
+.mogul-root .gr-accordion {
+  contain: layout style !important;
+}
+.mogul-root .gr-accordion-content {
+  overflow: hidden !important;
+}
 """
 TAB_OVERRIDE_CSS = """
 /* Style the tab bar to highlight the Custom tab */
@@ -676,7 +697,7 @@ def render_shipments(obs: dict, last_acted_on: str | None = None) -> str:
     progress_map = obs.get("resolution_progress", {})
     if not status_text or status_text == "No active shipments.":
         return (
-            '<div style="text-align:center;padding:48px;color:#6b7280">'
+            '<div style="text-align:center;padding:48px;color:#6b7280;min-height:200px">'
             '<div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5">\U0001f4e6</div>'
             '<div style="font-size:0.9rem">Select a difficulty and click '
             '<b style="color:#EE4C2C">\u25b6 Run Agent Demo</b> to start.</div></div>'

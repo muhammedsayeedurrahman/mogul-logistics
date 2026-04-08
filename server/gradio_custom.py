@@ -733,7 +733,7 @@ def build_custom_dashboard(
                 value=(
                     '<div style="background:rgba(20,24,36,0.7);backdrop-filter:blur(16px);'
                     'border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:24px;'
-                    'margin:12px 0;text-align:center">'
+                    'margin:12px 0;text-align:center;min-height:80px">'
                     '<span style="font-size:1.5rem;opacity:0.5">\U0001f3ac</span><br>'
                     '<span style="color:#6b7280;font-size:0.85rem">'
                     'Click <b style="color:#EE4C2C">\u25b6 Run Agent Demo</b> '
@@ -751,7 +751,8 @@ def build_custom_dashboard(
                     )
                     shipments_display = gr.HTML(
                         value=(
-                            '<div style="text-align:center;padding:48px;color:#6b7280">'
+                            '<div style="text-align:center;padding:48px;color:#6b7280;'
+                            'min-height:200px">'
                             '<div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5">'
                             '\U0001f4e6</div>'
                             '<div style="font-size:0.9rem">Select a difficulty and click '
