@@ -647,24 +647,31 @@ def build_custom_dashboard(
     with gr.Blocks() as dashboard:
         gr.HTML(f"<style>{CUSTOM_CSS}</style>")
 
+        # ── Sidebar ──────────────────────────────────────────────
         with gr.Sidebar(position="left", open=True):
             gr.HTML(
-                '<div style="font-size:1.1rem;font-weight:700;color:#0668E1;'
-                'margin-bottom:12px;text-shadow:0 0 10px rgba(6,104,225,0.3)">'
-                '\u2699 Controls</div>'
-                '<div style="background:linear-gradient(135deg,#0a2622,#1a3a35);'
-                'border:2px solid #2B7D6D;border-radius:8px;padding:12px;margin-bottom:16px">'
-                '<div style="color:#2B7D6D;font-weight:700;font-size:0.85rem;'
+                '<div style="font-size:1.05rem;font-weight:800;color:#60a5fa;'
+                'margin-bottom:14px;display:flex;align-items:center;gap:8px">'
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" '
+                'stroke="#60a5fa" stroke-width="2"><circle cx="12" cy="12" r="3"/>'
+                '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+                'Controls</div>'
+            )
+
+            # Judge quick-start guide
+            gr.HTML(
+                '<div style="background:rgba(52,211,153,0.06);'
+                'border:1px solid rgba(52,211,153,0.2);border-radius:12px;'
+                'padding:14px;margin-bottom:16px">'
+                '<div style="color:#34d399;font-weight:700;font-size:0.82rem;'
                 'margin-bottom:8px;display:flex;align-items:center;gap:6px">'
-                '<span style="font-size:1.2rem">\U0001f3af</span>FOR JUDGES: 30-SEC DEMO</div>'
-                '<div style="color:#c8d6e0;font-size:0.78rem;line-height:1.5">'
-                '<strong style="color:#ffd740">1.</strong> Select difficulty below<br>'
-                '<strong style="color:#ffd740">2.</strong> Click <strong>\u25b6 Run Agent Demo</strong><br>'
-                '<strong style="color:#ffd740">3.</strong> Watch AI solve logistics crisis!<br>'
-                '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #2B7D6D50">'
-                '<strong style="color:#ffd740">Manual Test:</strong> Use controls below '
-                'to test specific actions on individual shipments</div>'
-                '</div></div>'
+                '\U0001f3af FOR JUDGES: 30-SEC DEMO</div>'
+                '<div style="color:#a0a8b8;font-size:0.78rem;line-height:1.6">'
+                '<strong style="color:#fbbf24">1.</strong> Select difficulty below<br>'
+                '<strong style="color:#fbbf24">2.</strong> Click <strong style="color:#e0e6ed">'
+                '\u25b6 Run Agent Demo</strong><br>'
+                '<strong style="color:#fbbf24">3.</strong> Watch AI solve logistics crisis!</div>'
+                '</div>'
             )
 
             task_selector = gr.Dropdown(
@@ -684,7 +691,7 @@ def build_custom_dashboard(
                 label="Demo Speed (seconds per step)",
             )
 
-            gr.HTML('<hr style="border-color:#404040;margin:12px 0">')
+            gr.HTML('<hr style="border-color:rgba(255,255,255,0.06);margin:14px 0">')
 
             run_all_btn = gr.Button(
                 "\u26a1 Run All Difficulties",
@@ -692,21 +699,17 @@ def build_custom_dashboard(
                 elem_classes="btn-demo-all",
             )
 
-            gr.HTML('<hr style="border-color:#404040;margin:12px 0">')
+            gr.HTML('<hr style="border-color:rgba(255,255,255,0.06);margin:14px 0">')
 
             with gr.Accordion("\U0001f4cb Grading Rubric", open=False):
                 gr.HTML(RUBRIC_HTML)
 
-            gr.HTML(
-                '<div style="font-size:0.78rem;color:#666666;margin-top:8px">'
-                '\U0001f4a1 Use <b>Manual Control</b> panel below the '
-                'shipments to test individual actions.</div>'
-            )
-
+        # ── Main Content ─────────────────────────────────────────
         with gr.Column(elem_classes="mogul-root"):
             gr.HTML(INTRO_HTML)
             gr.HTML(HOW_IT_WORKS_HTML)
 
+            # ── Stat cards row ──
             with gr.Row():
                 stat_resolved = gr.Textbox(
                     value="0/0", label="RESOLVED", interactive=False,
@@ -725,246 +728,237 @@ def build_custom_dashboard(
                     elem_classes="stat-card stat-red",
                 )
 
+            # ── Agent Activity Feed (narration) ──
             narration_display = gr.HTML(
                 value=(
-                    '<div style="background:linear-gradient(135deg,#1c1c1c,#262626);'
-                    'border:1px solid #404040;border-radius:10px;padding:20px;'
-                    'margin:12px 0;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,0.3)">'
-                    '<span style="font-size:1.3rem">\U0001f3ac</span><br>'
-                    '<span style="color:#666666;font-size:0.85rem">'
+                    '<div style="background:rgba(20,24,36,0.7);backdrop-filter:blur(16px);'
+                    'border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:24px;'
+                    'margin:12px 0;text-align:center">'
+                    '<span style="font-size:1.5rem;opacity:0.5">\U0001f3ac</span><br>'
+                    '<span style="color:#6b7280;font-size:0.85rem">'
                     'Click <b style="color:#EE4C2C">\u25b6 Run Agent Demo</b> '
-                    'in the sidebar to watch the agent solve shipments '
-                    'step-by-step</span></div>'
+                    'in the sidebar to watch the agent solve shipments</span></div>'
                 ),
             )
 
-            with gr.Accordion("\U0001f5fa Route Map \u2014 Indian Logistics Network", open=True):
-                route_map_display = gr.HTML(
-                    value=render_route_map(),
-                )
-
-            with gr.Accordion("📊 Live Constraint Monitor — Real-Time Optimization Limits", open=True):
-                constraints_display = gr.HTML(
-                    value="""
-                    <div style="text-align:center;padding:40px;color:#666;">
-                        <div style="font-size:2rem;margin-bottom:8px;">📊</div>
-                        <div>Reset an episode to see live constraint visualization</div>
-                    </div>
-                    """
-                )
-
-            with gr.Accordion("🤝 Multi-Agent Negotiation — Collaborative Decision Making", open=False):
-                negotiation_display = gr.HTML(
-                    value="""
-                    <div style="text-align:center;padding:40px;color:#666;">
-                        <div style="font-size:2rem;margin-bottom:8px;">🤝</div>
-                        <div>Execute an action to see multi-agent proposals and consensus</div>
-                    </div>
-                    """
-                )
-
-            with gr.Accordion("🧠 Explainable AI — Decision Reasoning & Alternatives", open=False):
-                explanation_display = gr.HTML(
-                    value="""
-                    <div style="text-align:center;padding:40px;color:#666;">
-                        <div style="font-size:2rem;margin-bottom:8px;">🧠</div>
-                        <div>Execute an action to see why the AI chose it and what alternatives were considered</div>
-                    </div>
-                    """
-                )
-
+            # ── Route Map + Shipments side by side ──
             with gr.Row():
                 with gr.Column(scale=3):
                     gr.HTML(
-                        '<div style="color:#666666;font-size:0.72rem;'
-                        'text-transform:uppercase;letter-spacing:0.1em;'
-                        'margin-bottom:6px">Shipments</div>'
+                        '<div style="color:#6b7280;font-size:0.68rem;'
+                        'text-transform:uppercase;letter-spacing:0.12em;'
+                        'font-weight:700;margin-bottom:6px">\U0001f4e6 Shipments</div>'
                     )
                     shipments_display = gr.HTML(
                         value=(
-                            '<div style="text-align:center;padding:40px;'
-                            'color:#666666">'
-                            '<div style="font-size:2rem;margin-bottom:8px">'
+                            '<div style="text-align:center;padding:48px;color:#6b7280">'
+                            '<div style="font-size:2.5rem;margin-bottom:12px;opacity:0.5">'
                             '\U0001f4e6</div>'
-                            'Select a difficulty and click '
-                            '<b>\u25b6 Run Agent Demo</b> in the sidebar '
-                            'to watch the agent work.</div>'
+                            '<div style="font-size:0.9rem">Select a difficulty and click '
+                            '<b style="color:#EE4C2C">\u25b6 Run Agent Demo</b> '
+                            'to start.</div></div>'
                         ),
                     )
 
                 with gr.Column(scale=2):
                     gr.HTML(
-                        '<div style="color:#666666;font-size:0.72rem;'
-                        'text-transform:uppercase;letter-spacing:0.1em;'
-                        'margin-bottom:6px">Feedback</div>'
+                        '<div style="color:#6b7280;font-size:0.68rem;'
+                        'text-transform:uppercase;letter-spacing:0.12em;'
+                        'font-weight:700;margin-bottom:6px">Feedback</div>'
                     )
                     feedback_display = gr.HTML(
                         value=(
-                            '<div style="background:#1c1c1c;border:1px solid '
-                            '#404040;padding:12px 16px;border-radius:6px;'
+                            '<div style="background:rgba(10,14,26,0.9);'
+                            'border:1px solid rgba(255,255,255,0.06);'
+                            'padding:12px 16px;border-radius:10px;'
                             'font-family:\'JetBrains Mono\',monospace;font-size:0.82rem;'
-                            'color:#0668E1">Ready.</div>'
+                            'color:#60a5fa">Ready.</div>'
                         ),
                     )
-
                     gr.HTML(
-                        '<div style="color:#666666;font-size:0.72rem;'
-                        'text-transform:uppercase;letter-spacing:0.1em;'
-                        'margin:8px 0 6px 0">Action Log</div>'
+                        '<div style="color:#6b7280;font-size:0.68rem;'
+                        'text-transform:uppercase;letter-spacing:0.12em;'
+                        'font-weight:700;margin:8px 0 6px 0">Action Log</div>'
                     )
                     log_display = gr.Textbox(
                         value="", interactive=False, lines=6,
                         elem_classes="action-log",
                     )
 
-            # ── Manual Control Panel ──
-            gr.HTML(
-                '<div style="color:#0668E1;font-size:0.88rem;font-weight:700;'
-                'margin-top:20px;margin-bottom:8px;display:flex;'
-                'align-items:center;gap:8px;text-shadow:0 0 10px rgba(6,104,225,0.3)">'
-                '<span style="font-size:1.1rem">\U0001f3ae</span>'
-                'MANUAL CONTROL \u2014 Test Individual Actions'
-                '</div>'
-            )
-            with gr.Group(elem_classes="manual-panel"):
-                with gr.Row():
-                    action_type = gr.Dropdown(
-                        choices=sorted(ACTION_COSTS.keys()),
-                        label="Action Type", value="investigate",
-                        scale=2,
-                    )
-                    target_id = gr.Dropdown(
-                        choices=[f"SHP-{i:03d}" for i in range(1, 9)],
-                        label="Target Shipment", value="SHP-001",
-                        scale=2,
-                    )
-                    params_input = gr.Textbox(
-                        label="Parameters (JSON)", value="{}",
-                        placeholder='{"reason": "urgent"}',
-                        scale=2,
-                    )
-                    cost_hint = gr.HTML(
-                        f'<div style="text-align:center;padding-top:24px">'
-                        f'<div style="font-size:0.72rem;color:#666666;'
-                        f'text-transform:uppercase;letter-spacing:0.05em">'
-                        f'Action Cost</div>'
-                        f'<div style="font-size:1.6rem;font-weight:700;'
-                        f'color:#ffd740;text-shadow:0 0 8px rgba(255,215,64,0.4)">'
-                        f'${int(ACTION_COSTS.get("investigate", 0)):,}'
-                        f'</div></div>',
-                    )
+            # ── Route Map ──
+            with gr.Accordion("\U0001f5fa Route Map \u2014 Indian Logistics Network", open=True):
+                route_map_display = gr.HTML(value=render_route_map())
 
-                def _update_cost(at):
-                    c = int(ACTION_COSTS.get(at, 0))
-                    return (
-                        f'<div style="text-align:center;padding-top:24px">'
-                        f'<div style="font-size:0.72rem;color:#666666;'
-                        f'text-transform:uppercase;letter-spacing:0.05em">'
-                        f'Action Cost</div>'
-                        f'<div style="font-size:1.6rem;font-weight:700;'
-                        f'color:#ffd740;text-shadow:0 0 8px rgba(255,215,64,0.4)">'
-                        f'${c:,}</div></div>'
+            # ── Constraint Monitor ──
+            with gr.Accordion("\U0001f4ca Live Constraint Monitor", open=True):
+                constraints_display = gr.HTML(
+                    value=(
+                        '<div style="text-align:center;padding:40px;color:#6b7280">'
+                        '<div style="font-size:2rem;margin-bottom:8px;opacity:0.5">'
+                        '\U0001f4ca</div>'
+                        '<div>Reset an episode to see live constraint visualization</div>'
+                        '</div>'
                     )
-
-                action_type.change(
-                    fn=_update_cost,
-                    inputs=[action_type],
-                    outputs=[cost_hint],
                 )
 
-                with gr.Row():
-                    step_btn = gr.Button(
-                        "\u26a1 Execute Step", variant="primary",
-                        elem_classes="manual-execute-btn", scale=2,
-                    )
-                    reset_btn = gr.Button(
-                        "\U0001f504 Reset Episode", variant="secondary",
-                        elem_classes="manual-reset-btn", scale=1,
-                    )
+            # ── Multi-Agent + Explainable AI ──
+            with gr.Row():
+                with gr.Column():
+                    with gr.Accordion("\U0001f91d Multi-Agent Negotiation", open=False):
+                        negotiation_display = gr.HTML(
+                            value=(
+                                '<div style="text-align:center;padding:32px;color:#6b7280">'
+                                '<div style="font-size:1.5rem;margin-bottom:8px;opacity:0.5">'
+                                '\U0001f91d</div>'
+                                '<div style="font-size:0.85rem">Execute an action to see '
+                                'multi-agent proposals</div></div>'
+                            )
+                        )
+                with gr.Column():
+                    with gr.Accordion("\U0001f9e0 Explainable AI", open=False):
+                        explanation_display = gr.HTML(
+                            value=(
+                                '<div style="text-align:center;padding:32px;color:#6b7280">'
+                                '<div style="font-size:1.5rem;margin-bottom:8px;opacity:0.5">'
+                                '\U0001f9e0</div>'
+                                '<div style="font-size:0.85rem">Execute an action to see '
+                                'AI reasoning</div></div>'
+                            )
+                        )
 
-                gr.HTML(
-                    '<div style="font-size:0.75rem;color:#666666;'
-                    'margin-top:8px;line-height:1.5">'
-                    '<b style="color:#e0e6ed">How to verify:</b> '
-                    'Select a difficulty above \u2192 click '
-                    '<b>\U0001f504 Reset</b> \u2192 '
-                    'choose an action type & target \u2192 click '
-                    '<b>\u26a1 Execute</b>. '
-                    'Watch the shipment cards update in real-time. '
-                    'Resolution actions: <code style="color:#2B7D6D">'
-                    'reroute, reschedule, file_claim, approve_refund, '
-                    'split_shipment</code>.</div>'
-                )
-
+            # ── Scorecard + Comparison ──
             scorecard_display = gr.HTML(value="")
             comparison_display = gr.HTML(value="")
 
+            # ── Training Results ──
             with gr.Accordion("\U0001f4ca Training Results \u2014 Agent Performance", open=True):
                 gr.HTML(render_training_results())
 
-            with gr.Accordion("\U0001f3c6 Innovation Highlights \u2014 What Makes This Win", open=True):
+            # ── Innovation Highlights ──
+            with gr.Accordion("\U0001f3c6 Innovation Highlights", open=True):
                 gr.HTML(
-                    '<div style="background:linear-gradient(135deg,#0a2622,#1a3a35);'
-                    'border:2px solid #2B7D6D;border-radius:10px;padding:20px">'
+                    '<div style="background:rgba(20,24,36,0.7);backdrop-filter:blur(16px);'
+                    'border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:24px">'
+
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'
 
                     # Real Indian Logistics
-                    '<div style="margin-bottom:16px;padding-bottom:16px;'
-                    'border-bottom:1px solid #404040">'
-                    '<div style="color:#ffd740;font-weight:700;font-size:0.85rem;'
-                    'margin-bottom:8px;display:flex;align-items:center;gap:8px">'
-                    '<span style="font-size:1.2rem">\U0001f1ee\U0001f1f3</span>'
-                    'REAL INDIAN LOGISTICS (NOT TOY EXAMPLES)</div>'
-                    '<div style="color:#c8d6e0;font-size:0.82rem;line-height:1.6">'
-                    '✓ Actual routes: Mumbai-Chennai, NH48, coastal highways<br>'
-                    '✓ Real carriers: Blue Dart, Delhivery, Gati<br>'
-                    '✓ India-specific: Monsoon delays, GST compliance, Diwali surge<br>'
-                    '✓ Economic context: ₹400B+ freight industry'
-                    '</div></div>'
+                    '<div style="background:rgba(52,211,153,0.04);'
+                    'border:1px solid rgba(52,211,153,0.12);border-radius:12px;padding:18px">'
+                    '<div style="color:#34d399;font-weight:700;font-size:0.82rem;'
+                    'margin-bottom:8px;display:flex;align-items:center;gap:6px">'
+                    '\U0001f1ee\U0001f1f3 REAL INDIAN LOGISTICS</div>'
+                    '<div style="color:#a0a8b8;font-size:0.78rem;line-height:1.7">'
+                    'Mumbai-Chennai routes, Blue Dart/Delhivery carriers, '
+                    'monsoon delays, GST compliance, Diwali surge scenarios. '
+                    'India\'s $400B freight industry.</div></div>'
 
-                    # Sophisticated Reward Function
-                    '<div style="margin-bottom:16px;padding-bottom:16px;'
-                    'border-bottom:1px solid #404040">'
-                    '<div style="color:#ffd740;font-weight:700;font-size:0.85rem;'
-                    'margin-bottom:8px;display:flex;align-items:center;gap:8px">'
-                    '<span style="font-size:1.2rem">\U0001f4ca</span>'
-                    '4-COMPONENT COMPOSITE REWARD</div>'
-                    '<div style="color:#c8d6e0;font-size:0.82rem;line-height:1.6">'
-                    '✓ Resolution rate (40%) - Did you solve it?<br>'
-                    '✓ Cost efficiency (25%) - Did you save money?<br>'
-                    '✓ SLA compliance (20%) - Did you meet deadlines?<br>'
-                    '✓ Decision quality (15%) - Did you plan smartly?'
-                    '</div></div>'
+                    # Composite Reward
+                    '<div style="background:rgba(96,165,250,0.04);'
+                    'border:1px solid rgba(96,165,250,0.12);border-radius:12px;padding:18px">'
+                    '<div style="color:#60a5fa;font-weight:700;font-size:0.82rem;'
+                    'margin-bottom:8px;display:flex;align-items:center;gap:6px">'
+                    '\U0001f4ca 4-COMPONENT REWARD</div>'
+                    '<div style="color:#a0a8b8;font-size:0.78rem;line-height:1.7">'
+                    'Resolution rate (40%), Cost efficiency (25%), '
+                    'SLA compliance (20%), Decision quality (15%). '
+                    'Dense signal for GRPO/PPO convergence.</div></div>'
 
-                    # Training Results
-                    '<div style="margin-bottom:16px;padding-bottom:16px;'
-                    'border-bottom:1px solid #404040">'
-                    '<div style="color:#ffd740;font-weight:700;font-size:0.85rem;'
-                    'margin-bottom:8px;display:flex;align-items:center;gap:8px">'
-                    '<span style="font-size:1.2rem">\U0001f916</span>'
-                    'PROVEN LEARNING (234% IMPROVEMENT)</div>'
-                    '<div style="color:#c8d6e0;font-size:0.82rem;line-height:1.6">'
-                    '✓ Random baseline: 0.234 avg reward<br>'
-                    '✓ Trained policy: 0.783 avg reward (+234%)<br>'
-                    '✓ Heuristic expert: 0.898 avg reward (near-optimal)<br>'
-                    '✓ PyTorch REINFORCE on task_easy, 100 episodes'
-                    '</div></div>'
+                    # Proven Learning
+                    '<div style="background:rgba(251,191,36,0.04);'
+                    'border:1px solid rgba(251,191,36,0.12);border-radius:12px;padding:18px">'
+                    '<div style="color:#fbbf24;font-weight:700;font-size:0.82rem;'
+                    'margin-bottom:8px;display:flex;align-items:center;gap:6px">'
+                    '\U0001f916 PROVEN LEARNING (+234%)</div>'
+                    '<div style="color:#a0a8b8;font-size:0.78rem;line-height:1.7">'
+                    'Neural network trained via PyTorch REINFORCE. '
+                    '0.234 random \u2192 0.783 trained \u2192 0.898 expert. '
+                    'Clear learning signal in 100 episodes.</div></div>'
 
                     # Code Quality
-                    '<div>'
-                    '<div style="color:#ffd740;font-weight:700;font-size:0.85rem;'
-                    'margin-bottom:8px;display:flex;align-items:center;gap:8px">'
-                    '<span style="font-size:1.2rem">\U0001f3af</span>'
-                    'PRODUCTION-READY CODE</div>'
-                    '<div style="color:#c8d6e0;font-size:0.82rem;line-height:1.6">'
-                    '✓ 69/69 tests passing (comprehensive coverage)<br>'
-                    '✓ 3,559 lines of clean, modular code<br>'
-                    '✓ Full type hints (Pydantic models)<br>'
-                    '✓ Zero TODO/FIXME/HACK comments<br>'
-                    '✓ Glassmorphism UI with PyTorch branding'
-                    '</div></div>'
+                    '<div style="background:rgba(238,76,44,0.04);'
+                    'border:1px solid rgba(238,76,44,0.12);border-radius:12px;padding:18px">'
+                    '<div style="color:#EE4C2C;font-weight:700;font-size:0.82rem;'
+                    'margin-bottom:8px;display:flex;align-items:center;gap:6px">'
+                    '\U0001f3af PRODUCTION-READY</div>'
+                    '<div style="color:#a0a8b8;font-size:0.78rem;line-height:1.7">'
+                    '69/69 tests, Pydantic models, zero TODOs, '
+                    'clean modular architecture with MCP integration. '
+                    'Glassmorphism UI with PyTorch branding.</div></div>'
 
-                    '</div>'
+                    '</div></div>'
                 )
+
+            # ── Manual Control (collapsible at bottom) ──
+            with gr.Accordion("\U0001f3ae Manual Control \u2014 Test Individual Actions", open=False):
+                with gr.Group(elem_classes="manual-panel"):
+                    with gr.Row():
+                        action_type = gr.Dropdown(
+                            choices=sorted(ACTION_COSTS.keys()),
+                            label="Action Type", value="investigate",
+                            scale=2,
+                        )
+                        target_id = gr.Dropdown(
+                            choices=[f"SHP-{i:03d}" for i in range(1, 9)],
+                            label="Target Shipment", value="SHP-001",
+                            scale=2,
+                        )
+                        params_input = gr.Textbox(
+                            label="Parameters (JSON)", value="{}",
+                            placeholder='{"reason": "urgent"}',
+                            scale=2,
+                        )
+                        cost_hint = gr.HTML(
+                            f'<div style="text-align:center;padding-top:24px">'
+                            f'<div style="font-size:0.68rem;color:#6b7280;'
+                            f'text-transform:uppercase;letter-spacing:0.05em">'
+                            f'Action Cost</div>'
+                            f'<div style="font-size:1.6rem;font-weight:800;'
+                            f'color:#fbbf24;text-shadow:0 0 12px rgba(251,191,36,0.3)">'
+                            f'${int(ACTION_COSTS.get("investigate", 0)):,}'
+                            f'</div></div>',
+                        )
+
+                    def _update_cost(at):
+                        c = int(ACTION_COSTS.get(at, 0))
+                        return (
+                            f'<div style="text-align:center;padding-top:24px">'
+                            f'<div style="font-size:0.68rem;color:#6b7280;'
+                            f'text-transform:uppercase;letter-spacing:0.05em">'
+                            f'Action Cost</div>'
+                            f'<div style="font-size:1.6rem;font-weight:800;'
+                            f'color:#fbbf24;text-shadow:0 0 12px rgba(251,191,36,0.3)">'
+                            f'${c:,}</div></div>'
+                        )
+
+                    action_type.change(
+                        fn=_update_cost,
+                        inputs=[action_type],
+                        outputs=[cost_hint],
+                    )
+
+                    with gr.Row():
+                        step_btn = gr.Button(
+                            "\u26a1 Execute Step", variant="primary",
+                            elem_classes="manual-execute-btn", scale=2,
+                        )
+                        reset_btn = gr.Button(
+                            "\U0001f504 Reset Episode", variant="secondary",
+                            elem_classes="manual-reset-btn", scale=1,
+                        )
+
+                    gr.HTML(
+                        '<div style="font-size:0.75rem;color:#6b7280;'
+                        'margin-top:8px;line-height:1.5">'
+                        '<b style="color:#e0e6ed">How to verify:</b> '
+                        'Select a difficulty above \u2192 click '
+                        '<b>\U0001f504 Reset</b> \u2192 '
+                        'choose an action type & target \u2192 click '
+                        '<b>\u26a1 Execute</b>. '
+                        'Resolution actions: <code style="color:#34d399">'
+                        'reroute, reschedule, file_claim, approve_refund, '
+                        'split_shipment</code>.</div>'
+                    )
 
             with gr.Accordion("\U0001f4c4 Raw JSON Response", open=False):
                 raw_json = gr.Code(
@@ -1017,12 +1011,5 @@ def build_custom_dashboard(
         )
 
         dashboard.load(fn=None, js=AUTO_SWITCH_JS)
-
-        # Initialize validation message on load
-        dashboard.load(
-            fn=_validate_shipment_difficulty,
-            inputs=[target_id, task_selector],
-            outputs=[validation_msg],
-        )
 
     return dashboard
