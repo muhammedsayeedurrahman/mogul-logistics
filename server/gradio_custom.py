@@ -522,12 +522,20 @@ def build_custom_dashboard(
                     )
 
                 # Validation message for shipment/difficulty mismatch
-                validation_msg = gr.HTML(value="", visible=True)
+                validation_msg = gr.HTML(
+                    value='<div style="padding:12px;color:#666;text-align:center;font-size:0.85rem">Select a shipment to see validation</div>',
+                    visible=True,
+                    elem_id="shipment-validation-msg"
+                )
 
                 def _validate_shipment_difficulty(ship_id, task_label):
                     """Check if selected shipment exists in current difficulty."""
+                    # Debug logging (appears in server console)
+                    print(f"[VALIDATION] ship_id={ship_id}, task_label={task_label}")
+
                     # Extract ship number from SHP-XXX format
                     ship_num = int(ship_id.split("-")[1])
+                    print(f"[VALIDATION] ship_num={ship_num}")
 
                     # Map task labels to max shipments
                     task_max_ships = {
@@ -537,6 +545,7 @@ def build_custom_dashboard(
                     }
 
                     max_ships = task_max_ships.get(task_label, 1)
+                    print(f"[VALIDATION] max_ships={max_ships}, ship_num > max_ships = {ship_num > max_ships}")
 
                     if ship_num > max_ships:
                         # Suggest correct difficulty
