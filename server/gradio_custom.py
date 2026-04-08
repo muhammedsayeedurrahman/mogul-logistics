@@ -373,6 +373,24 @@ def build_custom_dashboard(
             )
 
         with gr.Column(elem_classes="mogul-root"):
+            # EMERGENCY TEST: Big red box at VERY TOP of page
+            gr.HTML(
+                '<div style="background:#ff0000;border:10px solid #ffff00;'
+                'border-radius:20px;padding:50px;margin:30px 0;text-align:center;'
+                'position:relative;z-index:9999">'
+                '<div style="color:#ffffff;font-weight:900;font-size:3rem;'
+                'text-shadow:2px 2px 4px #000">'
+                '🚨🚨🚨 EMERGENCY TEST MESSAGE 🚨🚨🚨</div>'
+                '<div style="color:#ffff00;font-weight:700;font-size:2rem;'
+                'margin-top:20px;text-shadow:2px 2px 4px #000">'
+                'IF YOU CAN SEE THIS, HTML IS RENDERING!</div>'
+                '<div style="color:#ffffff;font-size:1.5rem;margin-top:20px">'
+                'This is at the VERY TOP of the main content area.</div>'
+                '<div style="color:#ffffff;font-size:1.5rem">'
+                'If you see this, Gradio HTML components work.</div>'
+                '</div>'
+            )
+
             gr.HTML(INTRO_HTML)
             gr.HTML(HOW_IT_WORKS_HTML)
 
