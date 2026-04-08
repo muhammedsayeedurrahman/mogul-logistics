@@ -34,6 +34,7 @@ from .training_viz import render_training_results
 from .multi_agent import negotiation_engine
 from .constraints_viz import render_all_constraints
 from .explainable_ai import explainable_ai
+from .ui_enhancements_2026 import ADVANCED_CSS_2026, TOAST_JS, GUIDED_TOUR_JS
 
 
 def render_negotiation_panel(negotiation_data: Dict[str, Any]) -> str:
