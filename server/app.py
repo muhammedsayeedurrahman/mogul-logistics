@@ -59,7 +59,7 @@ app = create_app(
 @app.get("/", include_in_schema=False)
 async def root():
     """Redirect root to the web interface."""
-    return RedirectResponse(url="/web")
+    return RedirectResponse(url="/web/")
 
 
 # ---------------------------------------------------------------------------

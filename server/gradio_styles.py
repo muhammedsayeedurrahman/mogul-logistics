@@ -126,6 +126,10 @@ CUSTOM_CSS = """
   0%, 100% { text-shadow: 0 0 20px rgba(255, 82, 82, 0.6), 0 0 40px rgba(255, 82, 82, 0.3); }
   50% { text-shadow: 0 0 30px rgba(255, 82, 82, 0.8), 0 0 60px rgba(255, 82, 82, 0.4); }
 }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
 
 /* Action panel with glassmorphism */
 .action-panel {
@@ -566,7 +570,13 @@ def status_colour(status: str) -> str:
     }.get(status, _MUTED)
 
 
-def render_shipments(obs: dict) -> str:
+def render_shipments(obs: dict, last_acted_on: str | None = None) -> str:
+    """Render shipment cards with optional highlighting for last affected shipment.
+
+    Args:
+        obs: Observation dict containing shipment status and progress
+        last_acted_on: Shipment ID that was just acted on (e.g., "SHP-003")
+    """
     status_text = obs.get("shipment_status", "")
     progress_map = obs.get("resolution_progress", {})
     if not status_text or status_text == "No active shipments.":
@@ -593,6 +603,9 @@ def render_shipments(obs: dict) -> str:
         prog = progress_map.get(sid, 0.0)
         sla_steps = int("".join(c for c in parts[4] if c.isdigit()) or "0")
 
+        # Highlight if this shipment was just acted on
+        is_highlighted = (sid == last_acted_on)
+
         col = status_colour(status_val)
         icon = _PRIO_ICON.get(priority, "")
         inv = (
@@ -600,18 +613,39 @@ def render_shipments(obs: dict) -> str:
             'padding:1px 6px;font-size:0.6rem;border-radius:3px">\u2713 INVESTIGATED</span>'
             if status_val in ("investigating", "action_taken") else ""
         )
-        resolved_glow = (
-            "box-shadow:0 0 12px rgba(43,125,109,0.5);"
-            if status_val == "resolved" else ""
-        )
+
+        # Enhanced highlighting for just-acted-on shipment
+        if is_highlighted:
+            highlight_glow = (
+                "box-shadow:0 0 20px rgba(255,215,64,0.4),"
+                "0 0 40px rgba(255,215,64,0.2);"
+            )
+            highlight_border = "border:2px solid #ffd740!important;"
+            highlight_bg = "background:linear-gradient(135deg,#2a2410,#262626);"
+            updated_badge = (
+                ' <span style="background:#2B7D6D;color:#fff;'
+                'padding:2px 8px;font-size:0.65rem;border-radius:3px;'
+                'font-weight:700;animation:pulse 1s 3">\u2713 JUST UPDATED</span>'
+            )
+        else:
+            highlight_glow = (
+                "box-shadow:0 0 12px rgba(43,125,109,0.5);"
+                if status_val == "resolved" else ""
+            )
+            highlight_border = ""
+            highlight_bg = "background:#262626;"
+            updated_badge = ""
+
         failed_dim = "opacity:0.6;" if status_val == "failed" else ""
 
         cards.append(
-            f'<div style="background:#262626;border:1px solid #404040;'
+            f'<div style="{highlight_bg}{highlight_border}border:1px solid #404040;'
             f'border-left:3px solid {col};padding:10px 14px;margin-bottom:6px;'
-            f'border-radius:4px;transition:all 0.3s ease;{resolved_glow}{failed_dim}">'
+            f'border-radius:4px;transition:all 0.3s ease;{highlight_glow}{failed_dim}">'
             f'<div style="display:flex;justify-content:space-between;align-items:center">'
-            f'  <span style="font-weight:700;font-size:0.95rem">{sid}{inv}</span>'
+            f'  <span style="font-weight:700;font-size:0.95rem;'
+            f'color:{"#ffd740" if is_highlighted else "#e0e6ed"}">'
+            f'{sid}{inv}{updated_badge}</span>'
             f'  <span style="font-size:0.72rem;color:{col};text-transform:uppercase;'
             f'font-weight:600">{status_val}</span></div>'
             f'<div style="font-size:0.78rem;color:#666666;margin:4px 0">'
@@ -746,6 +780,18 @@ def render_cinematic_feed(events: list[dict], is_live: bool = False) -> str:
             f'START</span>'
         )
 
+        # Enhanced reasoning display for judges
+        reasoning_box = (
+            f'<div style="background:linear-gradient(135deg,#0a1612,#0d1f1a);'
+            f'border:1px solid {color}40;border-left:3px solid #ffd740;'
+            f'border-radius:6px;padding:12px 16px;margin-top:12px">'
+            f'<div style="color:#ffd740;font-weight:700;font-size:0.72rem;'
+            f'text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">'
+            f'\U0001f9e0 AGENT REASONING (WHY THIS ACTION?)</div>'
+            f'<div style="color:#c8d6e0;font-size:0.85rem;line-height:1.6;'
+            f'font-style:italic">{ev["explanation"]}</div></div>'
+        )
+
         entry = (
             f'<div class="cinematic-entry" style="background:{bg};'
             f'border:1px solid {border_c};border-left:3px solid {color};'
@@ -760,9 +806,7 @@ def render_cinematic_feed(events: list[dict], is_live: bool = False) -> str:
             f'<span style="color:#666666;font-size:0.78rem">\u2192 {ev["target"]}</span>'
             f'</div>'
             f'{cost_html}</div>'
-            f'<div style="color:#c8d6e0;font-size:0.82rem;margin-top:8px;'
-            f'padding-left:36px;line-height:1.5">'
-            f'\U0001f4ad {ev["explanation"]}</div>'
+            f'{reasoning_box}'
         )
 
         if ev.get("done") and ev.get("reward") is not None:
