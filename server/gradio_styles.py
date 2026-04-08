@@ -435,6 +435,137 @@ CUSTOM_CSS = """
   box-shadow: 0 0 20px rgba(6, 104, 225, 0.4), inset 0 0 20px rgba(6, 104, 225, 0.1) !important;
   transform: translateY(-2px) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   2026 UI/UX ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  pointer-events: none !important;
+}
+
+.toast {
+  background: rgba(28, 28, 28, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border-left: 4px solid #EE4C2C !important;
+  border-radius: 12px !important;
+  padding: 16px 20px !important;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 300px !important;
+  max-width: 400px !important;
+  opacity: 0 !important;
+  transform: translateX(400px) !important;
+  animation: slideInRight 0.3s forwards !important;
+  pointer-events: auto !important;
+}
+
+.toast.success { border-left-color: #2B7D6D !important; }
+.toast.error { border-left-color: #f44336 !important; }
+.toast.warning { border-left-color: #FF9800 !important; }
+
+@keyframes slideInRight {
+  to {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+  }
+}
+
+/* Impact Callout */
+.impact-callout {
+  background: linear-gradient(135deg, #EE4C2C, #C93D20) !important;
+  border-radius: 24px !important;
+  padding: 32px !important;
+  box-shadow: 0 8px 32px rgba(238, 76, 44, 0.4) !important;
+  text-align: center !important;
+  margin: 24px 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.impact-number {
+  font-size: 4rem !important;
+  font-weight: 900 !important;
+  color: white !important;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  margin-bottom: 12px !important;
+}
+
+.impact-label {
+  font-size: 1.2rem !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 600 !important;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  display: inline-block !important;
+  width: 20px !important;
+  height: 20px !important;
+  border: 3px solid rgba(255, 255, 255, 0.1) !important;
+  border-top-color: #EE4C2C !important;
+  border-radius: 50% !important;
+  animation: spin 0.8s linear infinite !important;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Enhanced Glass Cards */
+.glass-card-enhanced {
+  background: rgba(20, 24, 36, 0.7) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(224, 230, 237, 0.1) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.25s ease !important;
+}
+
+.glass-card-enhanced:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.3) !important;
+  border-color: #EE4C2C !important;
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth !important;
+}
+
+::-webkit-scrollbar {
+  width: 12px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0E1A !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E2330 !important;
+  border-radius: 6px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6B7280 !important;
+}
+
+/* Focus Styles for Accessibility */
+:focus-visible {
+  outline: 2px solid #EE4C2C !important;
+  outline-offset: 2px !important;
+}
 """
 TAB_OVERRIDE_CSS = """
 /* Style the tab bar to highlight the Custom tab */
@@ -462,6 +593,44 @@ AUTO_SWITCH_JS = """
       scrollObserver.observe(container, { childList: true, subtree: true });
     }
   }, 1500);
+
+  /* Initialize Toast Notification System */
+  if (!window.ToastManager) {
+    window.ToastManager = {
+      container: null,
+      init: function() {
+        if (!this.container) {
+          this.container = document.createElement('div');
+          this.container.className = 'toast-container';
+          document.body.appendChild(this.container);
+        }
+      },
+      show: function(message, type, duration) {
+        type = type || 'info';
+        duration = duration || 4000;
+        this.init();
+        var toast = document.createElement('div');
+        toast.className = 'toast ' + type;
+        var icons = { success: '✓', error: '✗', warning: '⚠', info: 'ℹ' };
+        toast.innerHTML = '<span style="font-size: 1.5rem;">' + (icons[type] || icons.info) + '</span>' +
+                         '<span style="color: #E0E6ED; font-weight: 500;">' + message + '</span>';
+        this.container.appendChild(toast);
+        var self = this;
+        setTimeout(function() {
+          toast.style.animation = 'slideOutRight 0.3s forwards';
+          setTimeout(function() { toast.remove(); }, 300);
+        }, duration);
+      }
+    };
+
+    /* Show welcome toast */
+    setTimeout(function() {
+      if (!sessionStorage.getItem('welcomeShown')) {
+        window.ToastManager.show('Welcome to MOGUL Logistics - TOP 3 Submission!', 'success', 5000);
+        sessionStorage.setItem('welcomeShown', 'true');
+      }
+    }, 2000);
+  }
 }
 """
 
