@@ -25,12 +25,15 @@ def render_training_results() -> str:
     with open(curve_path) as f:
         data = json.load(f)
 
-    random_avg = data.get("random_avg", 0.0)
-    heuristic_avg = data.get("heuristic_avg", 0.0)
-    trained_avg = data.get("trained_avg", 0.0)
-    training_rewards = data.get("training_rewards", [])
+    # JSON has nested structure: {"task_easy": {"random_baseline": ...}, ...}
+    easy = data.get("task_easy", {})
+    random_avg = easy.get("random_baseline", 0.0)
+    heuristic_avg = easy.get("heuristic_baseline", 0.0)
+    trained_avg = easy.get("trained_avg", 0.0)
+    training_rewards = easy.get("rewards_history", [])
 
     improvement = ((trained_avg - random_avg) / max(random_avg, 0.001)) * 100
+    bar_max = max(random_avg, heuristic_avg, trained_avg, 0.001)
 
     # Gradient-fill sparkline
     sparkline = ""
@@ -70,7 +73,7 @@ def render_training_results() -> str:
         )
 
     def _bar(label: str, value: float, color: str, emoji: str) -> str:
-        pct = min(value / 1.0, 1.0) * 100
+        pct = min(value / bar_max, 1.0) * 100
         return (
             f'<div style="margin:12px 0">'
             f'<div style="display:flex;justify-content:space-between;'
@@ -112,7 +115,7 @@ def render_training_results() -> str:
         f'<div style="font-size:0.82rem;color:#a0a8b8;text-transform:uppercase;'
         f'letter-spacing:0.12em;font-weight:700">Agent Performance Comparison</div>'
         f'<div style="font-size:0.72rem;color:#6b7280;margin-top:3px">'
-        f'Easy task \u00b7 50 episodes each \u00b7 PyTorch REINFORCE</div></div>'
+        f'Easy task \u00b7 {len(training_rewards)} episodes \u00b7 PyTorch REINFORCE</div></div>'
         f'<div style="text-align:right">'
         f'<div style="font-size:2.2rem;font-weight:900;color:#34d399;'
         f'line-height:1;text-shadow:0 0 20px rgba(52,211,153,0.3)">{improvement:.0f}%</div>'

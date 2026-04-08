@@ -617,7 +617,7 @@ text-transform:uppercase;letter-spacing:0.08em">Training Episodes</div>
 border:1px solid rgba(251,191,36,0.3);border-radius:14px;padding:16px 24px;
 text-align:center;min-width:120px">
 <div style="font-size:2.2rem;font-weight:900;color:#fbbf24;line-height:1;
-text-shadow:0 0 20px rgba(251,191,36,0.4)">69</div>
+text-shadow:0 0 20px rgba(251,191,36,0.4)">102</div>
 <div style="font-size:0.68rem;color:rgba(255,255,255,0.6);margin-top:4px;
 text-transform:uppercase;letter-spacing:0.08em">Tests Passing</div>
 </div>
