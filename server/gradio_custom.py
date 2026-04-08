@@ -34,7 +34,6 @@ from .training_viz import render_training_results
 from .multi_agent import negotiation_engine
 from .constraints_viz import render_all_constraints
 from .explainable_ai import explainable_ai
-from .ui_enhancements_2026 import ADVANCED_CSS_2026, TOAST_JS, GUIDED_TOUR_JS
 
 
 def render_negotiation_panel(negotiation_data: Dict[str, Any]) -> str:
@@ -267,9 +266,9 @@ def build_custom_dashboard(
 
     def _wrap(text: str) -> str:
         return (
-            f'<div style="background:#1c1c1c;border:1px solid #404040;'
+            f'<div style="background:rgba(20,24,36,0.95);border:1px solid rgba(255,255,255,0.08);'
             f'padding:12px 16px;border-radius:6px;font-family:\'JetBrains Mono\',monospace;'
-            f'font-size:0.82rem;color:#0668E1;white-space:pre-wrap">'
+            f'font-size:0.82rem;color:#e0e6ed;white-space:pre-wrap">'
             f'{text}</div>'
         )
 

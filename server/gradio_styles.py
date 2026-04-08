@@ -76,7 +76,7 @@ CUSTOM_CSS = """
 /* ── Floating particle dots (CSS-only) ──────────────────── */
 .mogul-root::before {
   content: '' !important;
-  position: fixed !important;
+  position: absolute !important;
   top: 0; left: 0; width: 100%; height: 100% !important;
   background-image:
     radial-gradient(2px 2px at 10% 20%, rgba(238,76,44,0.15) 50%, transparent 50%),
@@ -111,7 +111,7 @@ CUSTOM_CSS = """
   box-shadow: 0 8px 24px -4px rgba(0,0,0,0.5),
               inset 0 1px 0 rgba(255,255,255,0.06) !important;
   position: relative !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   z-index: 1 !important;
 }
 /* rotating gradient border */
@@ -121,15 +121,14 @@ CUSTOM_CSS = """
   top: -2px !important; left: -2px !important;
   right: -2px !important; bottom: -2px !important;
   border-radius: 18px !important;
-  background: conic-gradient(from var(--angle, 0deg),
+  background: conic-gradient(from 0deg,
     transparent 0%, transparent 70%,
     rgba(6,104,225,0.5) 75%, rgba(238,76,44,0.5) 85%,
     transparent 90%, transparent 100%) !important;
   z-index: -1 !important;
   animation: border-rotate 6s linear infinite !important;
 }
-@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-@keyframes border-rotate { to { --angle: 360deg; } }
+@keyframes border-rotate { to { transform: rotate(360deg); } }
 
 .stat-card::after {
   content: '' !important;
@@ -341,7 +340,7 @@ CUSTOM_CSS = """
 
 /* ── Toast notifications ────────────────────────────────── */
 .toast-container {
-  position: fixed !important; top: 20px !important; right: 20px !important;
+  position: absolute !important; top: 20px !important; right: 20px !important;
   z-index: 9999 !important; display: flex !important; flex-direction: column !important;
   gap: 12px !important; pointer-events: none !important;
 }
@@ -358,6 +357,7 @@ CUSTOM_CSS = """
 .toast.error { border-left-color: #f87171 !important; }
 .toast.warning { border-left-color: #fbbf24 !important; }
 @keyframes slideInRight { to { opacity: 1 !important; transform: translateX(0) !important; } }
+@keyframes slideOutRight { to { opacity: 0 !important; transform: translateX(400px) !important; } }
 
 /* ── Celebration animation ──────────────────────────────── */
 @keyframes celebrate {
@@ -463,7 +463,7 @@ AUTO_SWITCH_JS = """
     /* Show welcome toast */
     setTimeout(function() {
       if (!sessionStorage.getItem('welcomeShown')) {
-        window.ToastManager.show('Welcome to MOGUL Logistics - TOP 3 Submission!', 'success', 5000);
+        window.ToastManager.show('Welcome to MOGUL Logistics - OpenEnv 2026 Finalist!', 'success', 5000);
         sessionStorage.setItem('welcomeShown', 'true');
       }
     }, 2000);
@@ -474,30 +474,30 @@ AUTO_SWITCH_JS = """
 # ── Static HTML blocks ──────────────────────────────────────────────────
 
 RUBRIC_HTML = """
-<div style="background:#262626;border:1px solid #404040;padding:16px;border-radius:8px;font-size:0.82rem">
+<div style="background:rgba(20,24,36,0.95);border:1px solid rgba(255,255,255,0.08);padding:16px;border-radius:8px;font-size:0.82rem">
 <table style="width:100%;border-collapse:collapse">
-<tr style="border-bottom:1px solid #404040;color:#666666">
+<tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:#6b7280">
   <th style="padding:8px;text-align:left">Component</th>
   <th style="padding:8px;text-align:center">Weight</th>
   <th style="padding:8px;text-align:left">Formula</th></tr>
-<tr style="border-bottom:1px solid #404040">
+<tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
   <td style="padding:8px"><span style="color:#2B7D6D">\u25cf</span> Resolution Rate</td>
   <td style="padding:8px;text-align:center;font-weight:700">40%</td>
-  <td style="padding:8px;color:#666666">resolved_exceptions / total</td></tr>
-<tr style="border-bottom:1px solid #404040">
+  <td style="padding:8px;color:#6b7280">resolved_exceptions / total</td></tr>
+<tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
   <td style="padding:8px"><span style="color:#0668E1">\u25cf</span> Cost Efficiency</td>
   <td style="padding:8px;text-align:center;font-weight:700">25%</td>
-  <td style="padding:8px;color:#666666">1 - (cost_spent / budget)</td></tr>
-<tr style="border-bottom:1px solid #404040">
+  <td style="padding:8px;color:#6b7280">1 - (cost_spent / budget)</td></tr>
+<tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
   <td style="padding:8px"><span style="color:#ffd740">\u25cf</span> SLA Compliance</td>
   <td style="padding:8px;text-align:center;font-weight:700">20%</td>
-  <td style="padding:8px;color:#666666">1 - (violations / total)</td></tr>
+  <td style="padding:8px;color:#6b7280">1 - (violations / total)</td></tr>
 <tr>
   <td style="padding:8px"><span style="color:#EE4C2C">\u25cf</span> Decision Quality</td>
   <td style="padding:8px;text-align:center;font-weight:700">15%</td>
-  <td style="padding:8px;color:#666666">investigate-first + priority order</td></tr>
+  <td style="padding:8px;color:#6b7280">investigate-first + priority order</td></tr>
 </table>
-<div style="margin-top:12px;padding-top:12px;border-top:1px solid #404040;color:#666666;font-size:0.75rem">
+<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);color:#6b7280;font-size:0.75rem">
 <b style="color:#e0e6ed">Optimal 3-step sequence:</b> investigate ($50) \u2192 approve_refund ($1,500) \u2192 reschedule ($800) = 100% resolved<br>
 <b style="color:#e0e6ed">Resolution actions:</b> reroute, reschedule, file_claim, approve_refund, split_shipment \u2014 only these can mark a shipment as resolved
 </div>
@@ -601,7 +601,7 @@ by Muhammed Sayeedur Rahman
 border:1px solid rgba(52,211,153,0.3);border-radius:14px;padding:16px 24px;
 text-align:center;min-width:120px">
 <div style="font-size:2.2rem;font-weight:900;color:#34d399;line-height:1;
-text-shadow:0 0 20px rgba(52,211,153,0.4)">+649%</div>
+text-shadow:0 0 20px rgba(52,211,153,0.4)">+606%</div>
 <div style="font-size:0.68rem;color:rgba(255,255,255,0.6);margin-top:4px;
 text-transform:uppercase;letter-spacing:0.08em">vs Random</div>
 </div>
