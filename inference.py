@@ -35,10 +35,14 @@ MODEL_NAME = os.environ.get(
     "MODEL_NAME", "meta-llama/Llama-3.3-70B-Instruct"
 )
 
+# LLM is optional: if HF_TOKEN is missing, fall back to the trained
+# heuristic planner only. This lets local judges run inference.py with
+# zero config. When HF_TOKEN is set, the LLM gets first try per step.
+_LLM_ENABLED = bool(HF_TOKEN)
 llm = OpenAI(
     base_url=API_BASE_URL,
-    api_key=HF_TOKEN,
-)
+    api_key=HF_TOKEN or "sk-noop",
+) if _LLM_ENABLED else None
 
 ENV_URL = os.environ.get("ENV_URL", "http://localhost:8000")
 TASKS = ["task_easy", "task_medium", "task_hard"]
@@ -96,7 +100,10 @@ def ask_llm(
     messages: list[dict],
     observation: dict,
 ) -> dict:
-    """Query the LLM for an action decision."""
+    """Query the LLM for an action decision. Returns {} if LLM disabled."""
+    if not _LLM_ENABLED:
+        return {}
+
     user_msg = json.dumps(observation, indent=2, default=str)
     messages.append({"role": "user", "content": user_msg})
 
@@ -198,7 +205,8 @@ def log_end(
 # ---------------------------------------------------------------------------
 
 async def run_episode(task_id: str) -> float:
-    log_start(task=task_id, env=ENV_NAME, model=MODEL_NAME)
+    model_name = MODEL_NAME if _LLM_ENABLED else "heuristic-only"
+    log_start(task=task_id, env=ENV_NAME, model=model_name)
 
     messages: list[dict] = [
         {"role": "system", "content": SYSTEM_PROMPT},
