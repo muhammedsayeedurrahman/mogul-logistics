@@ -1,3 +1,14 @@
+---
+title: MOGUL Logistics
+emoji: 🚛
+colorFrom: orange
+colorTo: red
+sdk: docker
+app_port: 8000
+pinned: false
+short_description: RL environment for India's freight network (Meta OpenEnv)
+---
+
 # 🚛 MOGUL Logistics - AI for India's $400B Supply Chain
 
 > **Real-world RL environment for training AI agents to resolve logistics exceptions across India's complex freight network**

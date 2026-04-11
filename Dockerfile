@@ -2,6 +2,10 @@
 
 FROM python:3.12-slim
 
+# Build revision — bump to force HF Spaces to rebuild from scratch
+# and bypass any cached container images.
+LABEL build_rev="2026-04-12-neat-ui-v1"
+
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -u 1000 user
