@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
-
-# Ensure project root is importable
-_root = str(Path(__file__).resolve().parent.parent)
-if _root not in sys.path:
-    sys.path.insert(0, _root)
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import EnvironmentMetadata
 
-from models import ShipmentAction, ShipmentObservation, ShipmentState
+try:
+    from ..models import ShipmentAction, ShipmentObservation, ShipmentState
+except ImportError:
+    from models import ShipmentAction, ShipmentObservation, ShipmentState
 from server.constants import (
     ACTION_COSTS,
     ACTION_PROGRESS,

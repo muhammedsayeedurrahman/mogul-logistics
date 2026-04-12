@@ -9,7 +9,10 @@ from .constants import ACTION_COSTS, PRIORITY_RANK
 if TYPE_CHECKING:
     from server.scenarios import Scenario, Shipment
 
-    from models import ShipmentAction, ShipmentState
+    try:
+        from ..models import ShipmentAction, ShipmentState
+    except ImportError:
+        from models import ShipmentAction, ShipmentState
 
 
 def action_cost(action_type: str) -> float:

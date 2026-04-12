@@ -85,17 +85,19 @@ Grading implementation: [`server/graders.py`](server/graders.py)
 
 ## Training Results
 
-PyTorch REINFORCE policy trained on each difficulty tier. All scores use the same 0.0-1.0 composite grade.
+PyTorch REINFORCE policy trained on each difficulty tier (easy: 100 episodes, medium/hard: 250 episodes). All scores use the same 0.0-1.0 composite grade.
 
 | Agent | Easy | Medium | Hard |
 |-------|:----:|:------:|:----:|
-| Random baseline | 0.262 | 0.222 | 0.208 |
-| **Trained (REINFORCE)** | **0.853** | **0.578** | **0.372** |
+| Random baseline | 0.234 | 0.216 | 0.198 |
+| **Trained (REINFORCE)** | **0.818** | **0.331** | **0.220** |
 | Heuristic expert | 0.898 | 0.592 | 0.430 |
 
-- Easy: **+226%** over random, reaches **95%** of expert in 80 episodes
-- Medium: **+160%** over random, reaches **98%** of expert in 200 episodes
-- Hard: **+79%** over random, reaches **87%** of expert in 200 episodes
+- Easy: **+249%** over random, reaches **91%** of expert
+- Medium: **+53%** over random — learns SLA triage across 4 shipments
+- Hard: **+11%** over random — cascading 8-shipment task is genuinely hard
+
+The hard tier shows the environment's value: even 250 REINFORCE episodes barely scratch the surface, demonstrating room for advanced algorithms (PPO, GRPO via TorchRL/TRL).
 
 Reproducible: `python train_demo.py`. Raw data: [`assets/training_curve.json`](assets/training_curve.json).
 
@@ -119,10 +121,13 @@ Reproducible: `python train_demo.py`. Raw data: [`assets/training_curve.json`](a
 ## OpenEnv Compliance
 
 - `openenv.yaml` — spec v1, 3 tasks defined
+- `client.py` — typed `EnvClient[ShipmentAction, ShipmentObservation, ShipmentState]`
+- `models.py` — Pydantic `Action`, `Observation`, `State` subclasses
 - `POST /reset` — initialize episode, returns observation
 - `POST /step` — execute action, returns (observation, reward, done)
 - `GET /state` — episode metadata
 - `inference.py` — `[START]`/`[STEP]`/`[END]` structured logging
+- `openenv validate` — passes all checks (docker, openenv_serve, uv_run, python_module)
 - `HF_TOKEN`, `API_BASE_URL`, `MODEL_NAME` env vars supported
 - Dockerfile builds and deploys to HF Spaces
 - Runtime < 20 min on 2 vCPU / 8 GB RAM
@@ -142,9 +147,10 @@ server/
   app.py            # FastAPI + Gradio entry point
   gradio_custom.py  # Live demo dashboard
 models.py           # Pydantic schemas (Action/Observation/State)
+client.py           # Typed EnvClient (MogulLogisticsEnv)
 inference.py        # LLM agent with heuristic fallback
-train_demo.py       # PyTorch REINFORCE training
-tests/              # Test suite
+train_demo.py       # PyTorch REINFORCE training (all 3 tiers)
+tests/              # 78 tests (environment, graders, inference, integration, models, scenarios)
 openenv.yaml        # Environment manifest
 Dockerfile          # HF Spaces deployment
 ```

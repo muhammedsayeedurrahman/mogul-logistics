@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-# Ensure project root is importable
-_root = str(Path(__file__).resolve().parent.parent)
-if _root not in sys.path:
-    sys.path.insert(0, _root)
-
 from fastapi.responses import RedirectResponse
 from openenv.core.env_server import create_app
 
-from models import ShipmentAction, ShipmentObservation
+try:
+    from ..models import ShipmentAction, ShipmentObservation
+except ImportError:
+    from models import ShipmentAction, ShipmentObservation
+
 from server.constants import ACTION_COSTS, ACTION_PROGRESS, RESOLUTION_ACTIONS
 from server.environment import ShipmentEnvironment
 from server.gradio_custom import build_custom_dashboard
