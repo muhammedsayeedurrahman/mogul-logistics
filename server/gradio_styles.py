@@ -68,21 +68,37 @@ def _exc_icon(exc: str) -> str:
 _ASSETS = Path(__file__).resolve().parent.parent / "assets"
 
 
+def _smooth_curve(rewards: list[float], n_points: int = 10) -> list[float]:
+    """Downsample a reward list into n_points by averaging windows."""
+    if not rewards:
+        return []
+    if len(rewards) <= n_points:
+        return rewards
+    chunk = len(rewards) / n_points
+    result = []
+    for i in range(n_points):
+        start = int(i * chunk)
+        end = int((i + 1) * chunk)
+        window = rewards[start:end] or [0.0]
+        result.append(sum(window) / len(window))
+    return result
+
+
 def _load_rl_data() -> dict:
     try:
         with open(_ASSETS / "training_curve.json") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {
-            "task_easy":   {"random": 0.262, "heuristic": 0.898,
-                            "trained_final_avg": 0.853, "episodes": 80,
-                            "curve_smoothed": [.40, .55, .68, .75, .82, .85, .86, .86, .85, .85]},
-            "task_medium": {"random": 0.222, "heuristic": 0.592,
-                            "trained_final_avg": 0.578, "episodes": 200,
-                            "curve_smoothed": [.22, .30, .40, .48, .52, .55, .57, .58, .58, .58]},
-            "task_hard":   {"random": 0.208, "heuristic": 0.430,
-                            "trained_final_avg": 0.372, "episodes": 200,
-                            "curve_smoothed": [.21, .22, .25, .29, .33, .35, .36, .37, .37, .37]},
+            "task_easy":   {"random_avg": 0.234, "heuristic_avg": 0.898,
+                            "trained_avg": 0.818, "n_episodes": 100,
+                            "training_rewards": []},
+            "task_medium": {"random_avg": 0.216, "heuristic_avg": 0.592,
+                            "trained_avg": 0.331, "n_episodes": 250,
+                            "training_rewards": []},
+            "task_hard":   {"random_avg": 0.198, "heuristic_avg": 0.430,
+                            "trained_avg": 0.220, "n_episodes": 250,
+                            "training_rewards": []},
         }
 
 
@@ -277,45 +293,46 @@ footer { display: none !important; }
 
 # ── Static HTML blocks ───────────────────────────────────────────────────
 
-INTRO_HTML = """
-<div style="background:linear-gradient(135deg,#13151a 0%,#181a20 60%,#1a1c22 100%);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:28px 32px;margin-bottom:14px;position:relative;overflow:hidden">
-  <div style="position:absolute;top:0;right:0;width:220px;height:220px;background:radial-gradient(circle,rgba(238,76,44,.12) 0%,transparent 70%);pointer-events:none"></div>
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px;position:relative">
-    <div style="flex:1;min-width:280px">
-      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(238,76,44,.1);border:1px solid rgba(238,76,44,.25);padding:4px 10px;border-radius:20px;margin-bottom:12px">
-        <span style="width:5px;height:5px;background:#EE4C2C;border-radius:50%;display:inline-block"></span>
-        <span style="font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#EE4C2C">
-          Meta · PyTorch · OpenEnv 2026
-        </span>
-      </div>
-      <h1 style="font-size:2rem;font-weight:700;letter-spacing:-.035em;margin:0 0 6px;color:#f1f3f5;line-height:1.1">
-        MOGUL Logistics
-      </h1>
-      <p style="font-size:.9rem;color:#9ca3af;max-width:480px;line-height:1.55;margin:0 0 10px">
-        A reinforcement-learning environment for resolving shipment exceptions
-        across India's freight network &mdash; monsoons, GST checks, port closures.
-      </p>
-      <div style="font-size:.72rem;color:#4b5563;font-family:'DM Mono',monospace">
-        3 difficulty tiers · PyTorch REINFORCE · 8 action types · 10 Indian hubs
-      </div>
-    </div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
-      <div style="text-align:center;min-width:90px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);padding:14px 16px;border-radius:12px">
-        <div style="font-size:1.5rem;font-weight:700;color:#22c55e;letter-spacing:-.03em;font-family:'DM Mono',monospace">0.853</div>
-        <div style="font-size:.56rem;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-top:3px;font-weight:600">Trained · Easy</div>
-      </div>
-      <div style="text-align:center;min-width:90px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);padding:14px 16px;border-radius:12px">
-        <div style="font-size:1.5rem;font-weight:700;color:#3b82f6;letter-spacing:-.03em;font-family:'DM Mono',monospace">+226%</div>
-        <div style="font-size:.56rem;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-top:3px;font-weight:600">vs Random</div>
-      </div>
-      <div style="text-align:center;min-width:90px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);padding:14px 16px;border-radius:12px">
-        <div style="font-size:1.5rem;font-weight:700;color:#f59e0b;letter-spacing:-.03em;font-family:'DM Mono',monospace">95%</div>
-        <div style="font-size:.56rem;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-top:3px;font-weight:600">Of Expert</div>
-      </div>
-    </div>
-  </div>
-</div>
-"""
+def _build_intro_html() -> str:
+    """Build intro HTML with live numbers from training_curve.json."""
+    easy = _RL_DATA.get("task_easy", {})
+    trained = easy.get("trained_avg", 0.818)
+    random_avg = easy.get("random_avg", 0.234)
+    heuristic = easy.get("heuristic_avg", 0.898)
+    improv = int(((trained - random_avg) / max(random_avg, 0.001)) * 100)
+    expert_pct = int((trained / max(heuristic, 0.001)) * 100)
+
+    return (
+        '<div style="background:linear-gradient(135deg,#13151a 0%,#181a20 60%,#1a1c22 100%);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:28px 32px;margin-bottom:14px;position:relative;overflow:hidden">'
+        '<div style="position:absolute;top:0;right:0;width:220px;height:220px;background:radial-gradient(circle,rgba(238,76,44,.12) 0%,transparent 70%);pointer-events:none"></div>'
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:24px;position:relative">'
+        '<div style="flex:1;min-width:280px">'
+        '<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(238,76,44,.1);border:1px solid rgba(238,76,44,.25);padding:4px 10px;border-radius:20px;margin-bottom:12px">'
+        '<span style="width:5px;height:5px;background:#EE4C2C;border-radius:50%;display:inline-block"></span>'
+        '<span style="font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#EE4C2C">'
+        'Meta \u00b7 PyTorch \u00b7 OpenEnv 2026</span></div>'
+        '<h1 style="font-size:2rem;font-weight:700;letter-spacing:-.035em;margin:0 0 6px;color:#f1f3f5;line-height:1.1">'
+        'MOGUL Logistics</h1>'
+        '<p style="font-size:.9rem;color:#9ca3af;max-width:480px;line-height:1.55;margin:0 0 10px">'
+        'A reinforcement-learning environment for resolving shipment exceptions '
+        'across India\'s freight network &mdash; monsoons, GST checks, port closures.</p>'
+        '<div style="font-size:.72rem;color:#4b5563;font-family:\'DM Mono\',monospace">'
+        '3 difficulty tiers \u00b7 PyTorch REINFORCE \u00b7 8 action types \u00b7 10 Indian hubs</div></div>'
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">'
+        '<div style="text-align:center;min-width:90px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);padding:14px 16px;border-radius:12px">'
+        f'<div style="font-size:1.5rem;font-weight:700;color:#22c55e;letter-spacing:-.03em;font-family:\'DM Mono\',monospace">{trained:.3f}</div>'
+        '<div style="font-size:.56rem;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-top:3px;font-weight:600">Trained \u00b7 Easy</div></div>'
+        '<div style="text-align:center;min-width:90px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);padding:14px 16px;border-radius:12px">'
+        f'<div style="font-size:1.5rem;font-weight:700;color:#3b82f6;letter-spacing:-.03em;font-family:\'DM Mono\',monospace">+{improv}%</div>'
+        '<div style="font-size:.56rem;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-top:3px;font-weight:600">vs Random</div></div>'
+        '<div style="text-align:center;min-width:90px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);padding:14px 16px;border-radius:12px">'
+        f'<div style="font-size:1.5rem;font-weight:700;color:#f59e0b;letter-spacing:-.03em;font-family:\'DM Mono\',monospace">{expert_pct}%</div>'
+        '<div style="font-size:.56rem;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-top:3px;font-weight:600">Of Expert</div></div>'
+        '</div></div></div>'
+    )
+
+
+INTRO_HTML = _build_intro_html()
 
 
 HOW_IT_WORKS_HTML = """
@@ -650,7 +667,7 @@ def render_scorecard(data: dict) -> str:
 
     # vs random baseline (read live from honest training_curve.json)
     task_id = obs.get("task_id", "task_easy")
-    random_base = _RL_DATA.get(task_id, _RL_DATA["task_easy"])["random"]
+    random_base = _RL_DATA.get(task_id, _RL_DATA["task_easy"])["random_avg"]
     improvement = ((score - random_base) / max(random_base, .001)) * 100 if score > random_base else 0
 
     def _bar(label: str, val: float, mx: float, color: str) -> str:
@@ -790,7 +807,7 @@ def render_training_results() -> str:
         )
 
     easy = _RL_DATA["task_easy"]
-    headline_improv = int(((easy["trained_final_avg"] - easy["random"]) / max(easy["random"], .001)) * 100)
+    headline_improv = int(((easy["trained_avg"] - easy["random_avg"]) / max(easy["random_avg"], .001)) * 100)
 
     task_meta = [
         ("task_easy",   "Easy",   "#22c55e", "1 ship · 5 steps · $5K"),
@@ -801,11 +818,11 @@ def render_training_results() -> str:
     task_cards = ""
     for tid, label, color, meta in task_meta:
         d = _RL_DATA[tid]
-        rnd   = d["random"]
-        heur  = d["heuristic"]
-        train = d["trained_final_avg"]
-        eps   = d.get("episodes", 0)
-        curve = d.get("curve_smoothed", [])
+        rnd   = d["random_avg"]
+        heur  = d["heuristic_avg"]
+        train = d["trained_avg"]
+        eps   = d.get("n_episodes", 0)
+        curve = _smooth_curve(d.get("training_rewards", []))
 
         bmax = max(rnd, heur, train, 0.001)
         pct_of_expert = int((train / max(heur, .001)) * 100)
@@ -842,6 +859,9 @@ def render_training_results() -> str:
             f'</div></div>'
         )
 
+    easy_expert_pct = int((easy["trained_avg"] / max(easy["heuristic_avg"], .001)) * 100)
+    easy_eps = easy.get("n_episodes", 100)
+
     insight = (
         '<div style="background:linear-gradient(135deg,rgba(34,197,94,.05) 0%,rgba(59,130,246,.04) 100%);'
         'border:1px solid rgba(34,197,94,.2);'
@@ -850,10 +870,10 @@ def render_training_results() -> str:
         '<div style="font-size:.8rem;color:#cbd5e1;line-height:1.6">'
         '<strong style="color:#22c55e">Honest result:</strong> '
         f'Trained REINFORCE policy achieves <strong style="color:#f1f3f5">+{headline_improv}% '
-        'improvement over random</strong> on the easy task and reaches '
-        '<strong style="color:#f1f3f5">95% of expert-level performance</strong> '
-        'within 80 episodes. Medium and hard tasks show continued learning over 200 episodes. '
-        'All scores are on the same 0.0–1.0 final-grade scale. '
+        f'improvement over random</strong> on the easy task and reaches '
+        f'<strong style="color:#f1f3f5">{easy_expert_pct}% of expert-level performance</strong> '
+        f'within {easy_eps} episodes. Medium and hard tasks show continued learning over 250 episodes. '
+        'All scores are on the same 0.0\u20131.0 final-grade scale. '
         'Numbers loaded live from <code style="color:#3b82f6">assets/training_curve.json</code>.'
         '</div></div>'
     )
