@@ -134,16 +134,28 @@ CUSTOM_CSS = """
 }
 
 * { box-sizing: border-box; }
-.mogul-root { background: var(--bg) !important; color: var(--text) !important; padding: 0 !important; }
+
+/* ── Eliminate Gradio's default spacing bloat ── */
+.gradio-container { background: var(--bg) !important; min-height: auto !important; }
+.mogul-root { background: var(--bg) !important; color: var(--text) !important; padding: 0 8px !important; gap: 6px !important; }
+.mogul-root > div,
+.mogul-root .gr-group,
+.mogul-root .gr-block,
+.mogul-root .gr-box { gap: 4px !important; }
+.mogul-root .gr-padded { padding: 0 !important; }
 .mogul-root * { color: var(--text) !important; font-family: 'DM Sans', sans-serif !important; }
 .mogul-root code { font-family: 'DM Mono', monospace !important; }
+
+/* Empty HTML components should collapse completely */
+.mogul-root .html-container:has(> :empty),
+.mogul-root .html-container > div:empty { display: none !important; height: 0 !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; }
 
 /* stat cards */
 .stat-card {
   background: linear-gradient(180deg, #15181e 0%, #13151a 100%) !important;
   border: 1px solid var(--border) !important;
   border-radius: 10px !important;
-  padding: 14px !important;
+  padding: 10px !important;
   text-align: center !important;
   transition: border-color .2s, transform .2s !important;
 }
@@ -246,15 +258,19 @@ footer { display: none !important; }
 
 /* ── Mobile responsiveness ── */
 @media (max-width: 768px) {
-  .mogul-root { padding: 0 4px !important; }
+  .mogul-root { padding: 0 6px !important; gap: 4px !important; }
+  .mogul-root > div { gap: 2px !important; }
 
   .diff-row {
-    flex-direction: column !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
   }
   .diff-btn {
-    min-width: 100% !important;
-    padding: 12px 10px !important;
-    font-size: .78rem !important;
+    min-width: 0 !important;
+    padding: 10px 6px !important;
+    font-size: .68rem !important;
+    line-height: 1.3 !important;
   }
 
   .demo-controls {
@@ -268,15 +284,27 @@ footer { display: none !important; }
     grid-template-columns: 1fr !important;
   }
 
+  .stat-card {
+    padding: 8px 4px !important;
+  }
   .stat-card input,
   .stat-card textarea {
-    font-size: 1.1rem !important;
+    font-size: 1rem !important;
+  }
+  .stat-card label span {
+    font-size: .48rem !important;
   }
 
   .btn-demo, .btn-demo-all {
     font-size: .82rem !important;
     padding: 12px !important;
     min-width: 100% !important;
+  }
+
+  /* Compact training results on mobile */
+  .rl-results-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
   }
 }
 
@@ -758,7 +786,7 @@ def render_scorecard(data: dict) -> str:
 
 # ── RL Training Results panel (loaded from disk, honest numbers) ─────────
 
-def _sparkline(points: list[float], color: str, width: int = 280, height: int = 60) -> str:
+def _sparkline(points: list[float], color: str, width: int = 280, height: int = 48) -> str:
     if not points:
         return ""
     vmax = max(max(points), 1.0)
@@ -794,16 +822,16 @@ def render_training_results() -> str:
         weight = "700" if is_trained else "500"
         label_color = "#f1f3f5" if is_trained else "#9ca3af"
         return (
-            f'<div style="margin:9px 0">'
+            f'<div style="margin:6px 0">'
             f'<div style="display:flex;justify-content:space-between;'
-            f'align-items:center;font-size:.78rem;margin-bottom:4px">'
-            f'<span style="display:flex;align-items:center;gap:7px;font-weight:{weight};color:{label_color}">'
-            f'<span style="font-size:1rem">{emoji}</span><span>{label}</span></span>'
-            f'<span style="color:{color};font-weight:700;font-size:.92rem;'
+            f'align-items:center;font-size:.74rem;margin-bottom:3px">'
+            f'<span style="display:flex;align-items:center;gap:5px;font-weight:{weight};color:{label_color}">'
+            f'<span style="font-size:.88rem">{emoji}</span><span>{label}</span></span>'
+            f'<span style="color:{color};font-weight:700;font-size:.86rem;'
             f'font-family:\'DM Mono\',monospace">{value:.3f}</span></div>'
-            f'<div style="background:rgba(255,255,255,.05);height:10px;border-radius:5px;overflow:hidden">'
+            f'<div style="background:rgba(255,255,255,.05);height:7px;border-radius:4px;overflow:hidden">'
             f'<div style="background:linear-gradient(90deg,{color}70,{color});'
-            f'height:100%;width:{pct:.1f}%;border-radius:5px;transition:width .9s ease"></div></div></div>'
+            f'height:100%;width:{pct:.1f}%;border-radius:4px;transition:width .9s ease"></div></div></div>'
         )
 
     easy = _RL_DATA["task_easy"]
@@ -832,28 +860,28 @@ def render_training_results() -> str:
         task_cards += (
             f'<div style="background:linear-gradient(180deg,#15181e 0%,#13151a 100%);'
             f'border:1px solid rgba(255,255,255,.08);border-top:2px solid {color};'
-            f'border-radius:12px;padding:20px">'
+            f'border-radius:12px;padding:16px">'
 
-            f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">'
+            f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
             f'<div>'
             f'<div style="font-size:.6rem;font-weight:700;letter-spacing:.12em;'
-            f'text-transform:uppercase;color:{color};margin-bottom:4px">{label}</div>'
-            f'<div style="font-size:.72rem;color:#6b7280">{meta}</div>'
+            f'text-transform:uppercase;color:{color};margin-bottom:3px">{label}</div>'
+            f'<div style="font-size:.68rem;color:#6b7280">{meta}</div>'
             f'</div>'
             f'<div style="text-align:right">'
-            f'<div style="font-size:1.55rem;font-weight:700;color:{color};'
+            f'<div style="font-size:1.4rem;font-weight:700;color:{color};'
             f'letter-spacing:-.03em;line-height:1;font-family:\'DM Mono\',monospace">+{improv}%</div>'
-            f'<div style="font-size:.58rem;color:#6b7280;margin-top:2px;letter-spacing:.06em;text-transform:uppercase">vs Random</div>'
+            f'<div style="font-size:.54rem;color:#6b7280;margin-top:2px;letter-spacing:.06em;text-transform:uppercase">vs Random</div>'
             f'</div></div>'
 
-            f'{_row("Random baseline", rnd, bmax, "#ef4444", "🎲")}'
-            f'{_row("Trained (REINFORCE)", train, bmax, color, "🤖", is_trained=True)}'
-            f'{_row("Heuristic expert", heur, bmax, "#22c55e", "🧠")}'
+            f'{_row("Random baseline", rnd, bmax, "#ef4444", "\U0001f3b2")}'
+            f'{_row("Trained (REINFORCE)", train, bmax, color, "\U0001f916", is_trained=True)}'
+            f'{_row("Heuristic expert", heur, bmax, "#22c55e", "\U0001f9e0")}'
 
-            f'<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">'
+            f'<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">'
             f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'
-            f'<span style="font-size:.58rem;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;font-weight:700">Training reward curve</span>'
-            f'<span style="font-size:.58rem;color:#6b7280;font-family:\'DM Mono\',monospace">{eps} eps · {pct_of_expert}% of expert</span>'
+            f'<span style="font-size:.54rem;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;font-weight:700">Reward curve</span>'
+            f'<span style="font-size:.54rem;color:#6b7280;font-family:\'DM Mono\',monospace">{eps} eps \u00b7 {pct_of_expert}% of expert</span>'
             f'</div>'
             f'{spark}'
             f'</div></div>'
@@ -881,14 +909,14 @@ def render_training_results() -> str:
     return (
         '<div style="background:linear-gradient(180deg,rgba(20,24,36,.6) 0%,rgba(15,18,25,.6) 100%);'
         'border:1px solid rgba(255,255,255,.08);'
-        'border-radius:14px;padding:24px">'
-        '<div style="margin-bottom:18px">'
+        'border-radius:14px;padding:18px">'
+        '<div style="margin-bottom:14px">'
         '<div style="font-size:.6rem;color:#9ca3af;text-transform:uppercase;'
-        'letter-spacing:.14em;font-weight:700">Agent Performance · Honest RL Results</div>'
+        'letter-spacing:.14em;font-weight:700">Agent Performance \u00b7 Honest RL Results</div>'
         '<div style="font-size:.74rem;color:#6b7280;margin-top:4px">'
-        'PyTorch REINFORCE · final composite grade (0.0–1.0) · same scale across all agents</div>'
+        'PyTorch REINFORCE \u00b7 final composite grade (0.0\u20131.0) \u00b7 same scale across all agents</div>'
         '</div>'
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:16px">'
+        '<div class="rl-results-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px">'
         f'{task_cards}'
         '</div>'
         f'{insight}'
