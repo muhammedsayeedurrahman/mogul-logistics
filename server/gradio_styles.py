@@ -135,27 +135,17 @@ CUSTOM_CSS = """
 
 * { box-sizing: border-box; }
 
-/* ── Eliminate Gradio's default spacing bloat ── */
-.gradio-container { background: var(--bg) !important; min-height: auto !important; }
-.mogul-root { background: var(--bg) !important; color: var(--text) !important; padding: 0 8px !important; gap: 6px !important; }
-.mogul-root > div,
-.mogul-root .gr-group,
-.mogul-root .gr-block,
-.mogul-root .gr-box { gap: 4px !important; }
-.mogul-root .gr-padded { padding: 0 !important; }
+/* ── Core layout — safe overrides only ── */
+.mogul-root { background: var(--bg) !important; color: var(--text) !important; padding: 0 !important; }
 .mogul-root * { color: var(--text) !important; font-family: 'DM Sans', sans-serif !important; }
 .mogul-root code { font-family: 'DM Mono', monospace !important; }
-
-/* Empty HTML components should collapse completely */
-.mogul-root .html-container:has(> :empty),
-.mogul-root .html-container > div:empty { display: none !important; height: 0 !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; }
 
 /* stat cards */
 .stat-card {
   background: linear-gradient(180deg, #15181e 0%, #13151a 100%) !important;
   border: 1px solid var(--border) !important;
   border-radius: 10px !important;
-  padding: 10px !important;
+  padding: 14px !important;
   text-align: center !important;
   transition: border-color .2s, transform .2s !important;
 }
@@ -258,8 +248,7 @@ footer { display: none !important; }
 
 /* ── Mobile responsiveness ── */
 @media (max-width: 768px) {
-  .mogul-root { padding: 0 6px !important; gap: 4px !important; }
-  .mogul-root > div { gap: 2px !important; }
+  .mogul-root { padding: 0 4px !important; }
 
   .diff-row {
     flex-direction: row !important;
@@ -284,27 +273,15 @@ footer { display: none !important; }
     grid-template-columns: 1fr !important;
   }
 
-  .stat-card {
-    padding: 8px 4px !important;
-  }
   .stat-card input,
   .stat-card textarea {
-    font-size: 1rem !important;
-  }
-  .stat-card label span {
-    font-size: .48rem !important;
+    font-size: 1.1rem !important;
   }
 
   .btn-demo, .btn-demo-all {
     font-size: .82rem !important;
     padding: 12px !important;
     min-width: 100% !important;
-  }
-
-  /* Compact training results on mobile */
-  .rl-results-grid {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
   }
 }
 
