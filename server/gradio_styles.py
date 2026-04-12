@@ -183,6 +183,96 @@ CUSTOM_CSS = """
 
 /* hide footer / branding clutter */
 footer { display: none !important; }
+
+/* ── Difficulty buttons ── */
+.diff-row {
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+.diff-btn {
+  flex: 1 1 0 !important;
+  min-width: 120px !important;
+  background: var(--surface) !important;
+  border: 1.5px solid var(--border) !important;
+  border-radius: 10px !important;
+  padding: 14px 12px !important;
+  font-size: .82rem !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  white-space: pre-line !important;
+  line-height: 1.5 !important;
+  transition: border-color .2s, background .2s, box-shadow .2s !important;
+  cursor: pointer !important;
+}
+.diff-btn:hover {
+  border-color: var(--bmd) !important;
+  background: var(--card) !important;
+}
+.diff-easy:hover, .diff-easy:active {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 1px rgba(34,197,94,.2) !important;
+}
+.diff-med:hover, .diff-med:active {
+  border-color: var(--amber) !important;
+  box-shadow: 0 0 0 1px rgba(245,158,11,.2) !important;
+}
+.diff-hard:hover, .diff-hard:active {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 1px rgba(239,68,68,.2) !important;
+}
+
+/* ── Demo controls row ── */
+.demo-controls {
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  margin-top: 6px !important;
+}
+
+/* ── Mobile responsiveness ── */
+@media (max-width: 768px) {
+  .mogul-root { padding: 0 4px !important; }
+
+  .diff-row {
+    flex-direction: column !important;
+  }
+  .diff-btn {
+    min-width: 100% !important;
+    padding: 12px 10px !important;
+    font-size: .78rem !important;
+  }
+
+  .demo-controls {
+    flex-direction: column !important;
+  }
+  .demo-controls > * {
+    min-width: 100% !important;
+  }
+
+  .ship-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card input,
+  .stat-card textarea {
+    font-size: 1.1rem !important;
+  }
+
+  .btn-demo, .btn-demo-all {
+    font-size: .82rem !important;
+    padding: 12px !important;
+    min-width: 100% !important;
+  }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .diff-row {
+    flex-wrap: nowrap !important;
+  }
+  .ship-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
 """
 
 # ── Static HTML blocks ───────────────────────────────────────────────────

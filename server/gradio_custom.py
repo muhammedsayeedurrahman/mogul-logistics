@@ -220,27 +220,43 @@ def build_custom_dashboard(
             gr.HTML(INTRO_HTML)
             gr.HTML(HOW_IT_WORKS_HTML)
 
-            # ── Demo controls ──
-            with gr.Row():
-                task_selector = gr.Dropdown(
-                    choices=list(TASK_INFO.keys()),
-                    value=list(TASK_INFO.keys())[0],
-                    label="Difficulty",
-                    scale=3,
+            # ── Difficulty buttons ──
+            gr.HTML(
+                '<div style="font-size:.6rem;font-weight:700;letter-spacing:.1em;'
+                'text-transform:uppercase;color:#6b7280;margin:10px 0 6px">Difficulty</div>'
+            )
+            with gr.Row(elem_classes="diff-row"):
+                btn_easy = gr.Button(
+                    "Easy\n1 ship · 5 steps · $5K",
+                    elem_classes="diff-btn diff-easy",
                 )
+                btn_med = gr.Button(
+                    "Medium\n4 ships · 10 steps · $12K",
+                    elem_classes="diff-btn diff-med",
+                )
+                btn_hard = gr.Button(
+                    "Hard\n8 ships · 15 steps · $15K",
+                    elem_classes="diff-btn diff-hard",
+                )
+
+            # Hidden state to track selected difficulty
+            task_selector = gr.State(list(TASK_INFO.keys())[0])
+
+            # ── Demo controls ──
+            with gr.Row(elem_classes="demo-controls"):
                 speed_slider = gr.Slider(
                     minimum=0.3, maximum=2.0, value=0.6, step=0.1,
                     label="Demo speed (sec / step)",
                     scale=3,
                 )
                 demo_btn = gr.Button(
-                    "▶  Run Agent Demo",
+                    "Run Agent Demo",
                     variant="primary",
                     elem_classes="btn-demo",
                     scale=2,
                 )
                 run_all_btn = gr.Button(
-                    "⚡ Benchmark all tiers",
+                    "Benchmark all tiers",
                     variant="secondary",
                     elem_classes="btn-demo-all",
                     scale=2,
@@ -333,18 +349,27 @@ def build_custom_dashboard(
 
         # ── Wiring ──
 
-        async def _reset_wrap(task_label):
-            return list(await do_reset(task_label))
+        _diff_keys = list(TASK_INFO.keys())
+
+        async def _select_easy():
+            return [_diff_keys[0]] + list(await do_reset(_diff_keys[0]))
+
+        async def _select_med():
+            return [_diff_keys[1]] + list(await do_reset(_diff_keys[1]))
+
+        async def _select_hard():
+            return [_diff_keys[2]] + list(await do_reset(_diff_keys[2]))
+
+        _sel_outputs = [task_selector] + _outputs
+
+        btn_easy.click(fn=_select_easy, inputs=[], outputs=_sel_outputs)
+        btn_med.click(fn=_select_med, inputs=[], outputs=_sel_outputs)
+        btn_hard.click(fn=_select_hard, inputs=[], outputs=_sel_outputs)
 
         async def _demo_wrap(task_label, speed):
             async for r in do_auto_run(task_label, speed):
                 yield list(r)
 
-        task_selector.change(
-            fn=_reset_wrap,
-            inputs=[task_selector],
-            outputs=_outputs,
-        )
         demo_btn.click(
             fn=_demo_wrap,
             inputs=[task_selector, speed_slider],
